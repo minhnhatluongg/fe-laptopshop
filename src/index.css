@@ -1,0 +1,238 @@
+@import url("https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Outfit:wght@400;500;600;700&display=swap");
+@import "tailwindcss";
+
+/* ============================================================
+   Dark mode selector (TailAdmin uses .dark on <html>)
+   ============================================================ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================
+   Design tokens — colors, typography, shadows
+   Same palette as TailAdmin (Brand #465fff).
+   ============================================================ */
+@theme {
+  /* Be Vietnam Pro: body / UI text — optimised cho tiếng Việt */
+  --font-be-vietnam: "Be Vietnam Pro", system-ui, sans-serif;
+  /* Outfit: headings / numbers / brand name */
+  --font-outfit: "Outfit", "Be Vietnam Pro", sans-serif;
+
+  /* Brand (primary) */
+  --color-brand-25:   #f2f7ff;
+  --color-brand-50:   #ecf3ff;
+  --color-brand-100:  #dde9ff;
+  --color-brand-200:  #c2d6ff;
+  --color-brand-300:  #9cb9ff;
+  --color-brand-400:  #7592ff;
+  --color-brand-500:  #465fff;
+  --color-brand-600:  #3641f5;
+  --color-brand-700:  #2a31d8;
+  --color-brand-800:  #252dae;
+  --color-brand-900:  #262e89;
+  --color-brand-950:  #161950;
+
+  /* Blue Light (secondary) */
+  --color-blue-light-25:  #f5fbff;
+  --color-blue-light-50:  #f0f9ff;
+  --color-blue-light-100: #e0f2fe;
+  --color-blue-light-200: #b9e6fe;
+  --color-blue-light-300: #7cd4fd;
+  --color-blue-light-400: #36bffa;
+  --color-blue-light-500: #0ba5ec;
+  --color-blue-light-600: #0086c9;
+  --color-blue-light-700: #026aa2;
+  --color-blue-light-800: #065986;
+  --color-blue-light-900: #0b4a6f;
+  --color-blue-light-950: #062c41;
+
+  /* Gray scale */
+  --color-gray-25:   #fcfcfd;
+  --color-gray-50:   #f9fafb;
+  --color-gray-100:  #f2f4f7;
+  --color-gray-200:  #e4e7ec;
+  --color-gray-300:  #d0d5dd;
+  --color-gray-400:  #98a2b3;
+  --color-gray-500:  #667085;
+  --color-gray-600:  #475467;
+  --color-gray-700:  #344054;
+  --color-gray-800:  #1d2939;
+  --color-gray-900:  #101828;
+  --color-gray-950:  #0c111d;
+  --color-gray-dark: #1a2231;
+
+  /* Success */
+  --color-success-25:  #f6fef9;
+  --color-success-50:  #ecfdf3;
+  --color-success-100: #d1fadf;
+  --color-success-200: #a6f4c5;
+  --color-success-300: #6ce9a6;
+  --color-success-400: #32d583;
+  --color-success-500: #12b76a;
+  --color-success-600: #039855;
+  --color-success-700: #027a48;
+  --color-success-800: #05603a;
+  --color-success-900: #054f31;
+  --color-success-950: #053321;
+
+  /* Error */
+  --color-error-25:  #fffbfa;
+  --color-error-50:  #fef3f2;
+  --color-error-100: #fee4e2;
+  --color-error-200: #fecdca;
+  --color-error-300: #fda29b;
+  --color-error-400: #f97066;
+  --color-error-500: #f04438;
+  --color-error-600: #d92d20;
+  --color-error-700: #b42318;
+  --color-error-800: #912018;
+  --color-error-900: #7a271a;
+  --color-error-950: #55160c;
+
+  /* Warning / Orange */
+  --color-warning-25:  #fffcf5;
+  --color-warning-50:  #fffaeb;
+  --color-warning-100: #fef0c7;
+  --color-warning-200: #fedf89;
+  --color-warning-300: #fec84b;
+  --color-warning-400: #fdb022;
+  --color-warning-500: #f79009;
+  --color-warning-600: #dc6803;
+  --color-warning-700: #b54708;
+  --color-warning-800: #93370d;
+  --color-warning-900: #7a2e0e;
+  --color-warning-950: #4e1d09;
+
+  /* Accent colors */
+  --color-pink-500:   #ee46bc;
+  --color-purple-500: #7a5af8;
+
+  /* Typography — title sizes */
+  --text-title-2xl: 72px;
+  --text-title-2xl--line-height: 90px;
+  --text-title-xl:  60px;
+  --text-title-xl--line-height: 72px;
+  --text-title-lg:  48px;
+  --text-title-lg--line-height: 60px;
+  --text-title-md:  36px;
+  --text-title-md--line-height: 44px;
+  --text-title-sm:  30px;
+  --text-title-sm--line-height: 38px;
+
+  /* Body */
+  --text-theme-xl:  20px;
+  --text-theme-xl--line-height: 30px;
+  --text-theme-sm:  14px;
+  --text-theme-sm--line-height: 20px;
+  --text-theme-xs:  12px;
+  --text-theme-xs--line-height: 18px;
+
+  /* Shadows */
+  --shadow-theme-xs: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+  --shadow-theme-sm: 0 1px 3px 0 rgba(16, 24, 40, 0.1), 0 1px 2px 0 rgba(16, 24, 40, 0.06);
+  --shadow-theme-md: 0 4px 8px -2px rgba(16, 24, 40, 0.1), 0 2px 4px -2px rgba(16, 24, 40, 0.06);
+  --shadow-theme-lg: 0 12px 16px -4px rgba(16, 24, 40, 0.08), 0 4px 6px -2px rgba(16, 24, 40, 0.03);
+  --shadow-theme-xl: 0 20px 24px -4px rgba(16, 24, 40, 0.08), 0 8px 8px -4px rgba(16, 24, 40, 0.03);
+  --shadow-focus-ring: 0 0 0 4px rgba(70, 95, 255, 0.12);
+}
+
+/* ============================================================
+   Base
+   ============================================================ */
+@layer base {
+  html {
+    /* Body text dùng Be Vietnam Pro — đọc tiếng Việt sắc nét hơn */
+    font-family: var(--font-be-vietnam);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    letter-spacing: -0.01em;
+  }
+
+  /* Headings dùng Outfit — cân đối, hiện đại */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-outfit);
+    letter-spacing: -0.02em;
+  }
+
+  body {
+    @apply bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-300;
+  }
+
+  * {
+    @apply border-gray-200 dark:border-gray-800;
+  }
+}
+
+/* ============================================================
+   Utilities — menu items (sidebar), scrollbars
+   ============================================================ */
+@utility menu-item {
+  @apply relative flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-theme-sm font-medium transition-colors;
+}
+
+@utility menu-item-active {
+  @apply bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400;
+}
+
+@utility menu-item-inactive {
+  @apply text-gray-700 hover:bg-gray-100 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-white/5 dark:hover:text-white;
+}
+
+@utility menu-item-icon {
+  @apply flex h-5 w-5 shrink-0 items-center justify-center text-gray-500 dark:text-gray-400;
+}
+
+@utility menu-item-icon-active {
+  @apply text-brand-500 dark:text-brand-400;
+}
+
+@utility font-outfit {
+  font-family: var(--font-outfit);
+}
+
+@utility font-be-vietnam {
+  font-family: var(--font-be-vietnam);
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@utility custom-scrollbar {
+  &::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  &::-webkit-scrollbar-thumb {
+    @apply rounded bg-gray-200 dark:bg-gray-700;
+  }
+  &::-webkit-scrollbar-track {
+    @apply bg-transparent;
+  }
+}
+
+/* ── Toast animations ─────────────────────────────────────────────────── */
+@keyframes shrink {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+@keyframes slide-in-from-right-8 {
+  from { transform: translateX(2rem); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@utility animate-in {
+  animation-fill-mode: both;
+}
+@utility slide-in-from-right-8 {
+  animation-name: slide-in-from-right-8;
+}
+@utility fade-in {
+  animation-name: fade-in;
+}
+@keyframes fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
