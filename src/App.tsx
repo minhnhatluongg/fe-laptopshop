@@ -21,6 +21,7 @@ const AdminBannersPage    = lazy(() => import("@/pages/admin/banners/BannersPage
 const ProductsPage        = lazy(() => import("@/pages/public/ProductsPage"));
 const ProductDetailPage   = lazy(() => import("@/pages/public/ProductDetailPage"));
 const BrandsPage          = lazy(() => import("@/pages/public/BrandsPage"));
+const CartPage            = lazy(() => import("@/pages/public/CartPage"));
 
 function Loading() {
   return (
@@ -45,7 +46,7 @@ export default function App() {
               <Route path="brands" element={<BrandsPage />} />
               <Route path="sale" element={<AdminPlaceholder title="Khuyến mãi" />} />
               <Route path="contact" element={<AdminPlaceholder title="Liên hệ" />} />
-              <Route path="cart" element={<AdminPlaceholder title="Giỏ hàng" />} />
+              <Route path="cart" element={<CartPage />} />
 
               {/* Account — nested tabs */}
               <Route path="account" element={<AccountLayout />}>

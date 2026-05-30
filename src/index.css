@@ -212,6 +212,17 @@
   }
 }
 
+/* ── Cart pulse (khi thêm sản phẩm) ──────────────────────────────────── */
+@keyframes cart-bounce {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.35); }
+  60%  { transform: scale(0.9);  }
+  100% { transform: scale(1);   }
+}
+.cart-pulse {
+  animation: cart-bounce 0.38s ease-out forwards;
+}
+
 /* ── Toast animations ─────────────────────────────────────────────────── */
 @keyframes shrink {
   from { transform: scaleX(1); }

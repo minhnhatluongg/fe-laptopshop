@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import ReactApexChart from "react-apexcharts";
 import type { ApexOptions } from "apexcharts";
 import { Link } from "react-router-dom";
+import { useInventoryHub, type InventoryUpdate } from "@/hooks/useInventoryHub";
+import { HubConnectionState } from "@microsoft/signalr";
 import {
   dashboardApi,
   type ChartQueryParams,
@@ -46,6 +48,22 @@ function useChartData<T>(
 export default function AdminDashboardPage() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
+
+  // ── Real-time inventory via SignalR ───────────────────────────────────────
+  const [liveUpdates, setLiveUpdates] = useState<InventoryUpdate[]>([]);
+  const updatesRef = useRef<InventoryUpdate[]>([]);
+
+  const handleInventoryUpdate = useCallback((update: InventoryUpdate) => {
+    const next = [update, ...updatesRef.current].slice(0, 10); // keep last 10
+    updatesRef.current = next;
+    setLiveUpdates([...next]);
+  }, []);
+
+  const { state: hubState, isConnected, reconnect } = useInventoryHub({
+    enabled: true,
+    group: "admin",
+    onInventoryUpdated: handleInventoryUpdate,
+  });
 
   const [categories, setCategories] = useState<Category[]>([]);
   const [summary, setSummary]       = useState<DashboardSummary | null>(null);
@@ -184,6 +202,90 @@ export default function AdminDashboardPage() {
         <QuickStat label="Chờ xác nhận"  value={s?.pendingOrders}   color="warning" loading={summaryLoading} />
         <QuickStat label="Đã giao"        value={s?.deliveredOrders} color="success" loading={summaryLoading} />
         <QuickStat label="Đã huỷ"         value={s?.cancelledOrders} color="error"   loading={summaryLoading} />
+      </div>
+
+      {/* ── SignalR Live Feed ───────────────────────────────────────────────── */}
+      <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3 dark:border-gray-800">
+          <div className="flex items-center gap-2.5">
+            {/* Connection indicator */}
+            <span className={cn(
+              "flex h-2.5 w-2.5 rounded-full",
+              isConnected
+                ? "bg-success-500 shadow-[0_0_6px_theme(colors.success.500)]"
+                : hubState === HubConnectionState.Reconnecting
+                ? "bg-warning-500 animate-pulse"
+                : "bg-gray-300 dark:bg-gray-600",
+            )} />
+            <h3 className="font-outfit text-base font-semibold text-gray-900 dark:text-white">
+              Kho hàng thời gian thực
+            </h3>
+            <span className={cn(
+              "text-theme-xs font-medium",
+              isConnected ? "text-success-500" : "text-gray-400",
+            )}>
+              {isConnected ? "● Live" : hubState === HubConnectionState.Reconnecting ? "Đang kết nối..." : "Offline"}
+            </span>
+          </div>
+          {!isConnected && hubState !== HubConnectionState.Reconnecting && (
+            <button
+              type="button"
+              onClick={() => void reconnect()}
+              className="rounded-lg border border-gray-200 px-3 py-1.5 text-theme-xs text-gray-600 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-400"
+            >
+              Kết nối lại
+            </button>
+          )}
+        </div>
+
+        {liveUpdates.length === 0 ? (
+          <div className="px-5 py-6 text-center text-theme-sm text-gray-400 dark:text-gray-500">
+            {isConnected
+              ? "Đang chờ cập nhật kho... Khi có đơn hàng mới, tồn kho sẽ thay đổi ở đây."
+              : "Chưa kết nối SignalR — deploy BE và đảm bảo /hubs/inventory accessible."}
+          </div>
+        ) : (
+          <ul className="divide-y divide-gray-100 dark:divide-gray-800">
+            {liveUpdates.slice(0, 5).map((u, i) => (
+              <li key={`${u.productId}-${u.updatedAt}-${i}`}
+                className={cn(
+                  "flex items-center gap-4 px-5 py-3 text-theme-sm transition-colors",
+                  i === 0 && "bg-brand-50/40 dark:bg-brand-500/5",
+                )}>
+                <span className={cn(
+                  "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                  u.newStock <= 0
+                    ? "bg-error-100 text-error-600 dark:bg-error-500/20 dark:text-error-400"
+                    : u.newStock <= 5
+                    ? "bg-warning-100 text-warning-700 dark:bg-warning-500/20 dark:text-warning-400"
+                    : "bg-success-100 text-success-700 dark:bg-success-500/20 dark:text-success-500",
+                )}>
+                  {u.newStock <= 0 ? "!" : u.newStock <= 5 ? "⚠" : "↓"}
+                </span>
+                <div className="flex-1">
+                  <span className="font-medium text-gray-800 dark:text-white/90">
+                    Sản phẩm #{u.productId}
+                  </span>
+                  <span className="ml-2 text-gray-500 dark:text-gray-400">
+                    tồn kho →{" "}
+                    <strong className={cn(
+                      "font-semibold",
+                      u.newStock <= 0 ? "text-error-500" :
+                      u.newStock <= 5 ? "text-warning-600" : "text-success-600",
+                    )}>
+                      {u.newStock}
+                    </strong>
+                    {u.newStock <= 0 && " (Hết hàng)"}
+                    {u.newStock > 0 && u.newStock <= 5 && " (Sắp hết)"}
+                  </span>
+                </div>
+                <span className="shrink-0 text-theme-xs text-gray-400">
+                  {new Date(u.updatedAt).toLocaleTimeString("vi-VN")}
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
 
       {/* ── Revenue chart ──────────────────────────────────────────────────── */}

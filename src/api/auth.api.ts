@@ -54,4 +54,7 @@ export const authApi = {
     unwrap(
       apiClient.put<ApiResponse<{ avatarUrl: string }>>(`${BASE}/me/avatar`, { sysFileId }),
     ),
+
+  deleteAvatar: () =>
+    unwrap(apiClient.delete<ApiResponse<{ avatarUrl: string | null }>>(`${BASE}/me/avatar`)),
 };

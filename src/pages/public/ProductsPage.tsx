@@ -363,6 +363,12 @@ function ProductCard({ product: p }: { product: Product }) {
   const hasDiscount = (p.discount ?? 0) > 0;
   const imgSrc = p.mainImageUrl ? getImageUrl(p.mainImageUrl) : IMAGE_PLACEHOLDER;
 
+  // Gộp pin + cân nặng ("60Wh • 1.4kg") để tiết kiệm dòng
+  const batteryWeight = [p.battery, p.weight].filter(Boolean).join(" • ");
+  const screen = p.screen;
+  const rating = p.averageRating ?? 0;
+  const totalReviews = p.totalReviews ?? 0;
+
   return (
     <Link
       to={`/products/${p.slug}`}
@@ -373,7 +379,7 @@ function ProductCard({ product: p }: { product: Product }) {
           src={imgSrc}
           onError={(e) => { (e.target as HTMLImageElement).src = IMAGE_PLACEHOLDER; }}
           alt={p.name}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
         {hasDiscount && (
@@ -383,24 +389,79 @@ function ProductCard({ product: p }: { product: Product }) {
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">
-        <span className="text-theme-xs font-medium text-gray-400">
-          {p.brandName ?? ""}
-        </span>
-        <h3 className="mt-1 line-clamp-2 text-theme-sm font-semibold leading-snug text-gray-800 group-hover:text-brand-500 dark:text-white/90">
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-theme-sm font-semibold leading-snug text-gray-800 group-hover:text-brand-500 dark:text-white/90">
           {p.name}
         </h3>
-        <div className="mt-auto flex items-baseline gap-2 pt-3">
-          <span className="font-outfit text-base font-extrabold text-brand-600 dark:text-brand-400">
-            {formatVND(finalPrice)}
-          </span>
+
+        {/* Specs tóm tắt */}
+        <ul className="mt-3 space-y-1 rounded-lg bg-gray-50 px-3 py-2 text-theme-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
+          {p.cpu && <SpecLine icon="⚙" text={p.cpu} />}
+          {p.gpu && <SpecLine icon="🎮" text={p.gpu} />}
+          {(p.ram || p.storage) && (
+            <SpecLine
+              icon="💾"
+              text={[p.ram, p.storage].filter(Boolean).join(" • ")}
+              extra={screen ? <span className="text-gray-500">📺 {screen}</span> : null}
+            />
+          )}
+          {batteryWeight && <SpecLine icon="🔋" text={batteryWeight} />}
+        </ul>
+
+        {/* Price */}
+        <div className="mt-3 flex items-baseline gap-2">
           {hasDiscount && (
             <span className="text-theme-xs text-gray-400 line-through">
               {formatVND(p.price)}
             </span>
           )}
         </div>
+        <div className="flex items-baseline gap-2">
+          <span className="font-outfit text-lg font-extrabold text-error-500">
+            {formatVND(finalPrice)}
+          </span>
+          {hasDiscount && (
+            <span className="text-theme-xs font-semibold text-error-500">
+              -{p.discount}%
+            </span>
+          )}
+        </div>
+
+        {/* Rating + total reviews + comments */}
+        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-theme-xs text-gray-500">
+          <span className="inline-flex items-center gap-0.5">
+            <span className="font-semibold text-gray-700 dark:text-gray-200">
+              {rating.toFixed(1)}
+            </span>
+            <span className="text-warning-500">★</span>
+            <span>({totalReviews} đánh giá)</span>
+          </span>
+          {(p.totalComments ?? 0) > 0 && (
+            <span className="inline-flex items-center gap-0.5">
+              <span>💬</span>
+              <span>{p.totalComments} bình luận</span>
+            </span>
+          )}
+        </div>
       </div>
     </Link>
+  );
+}
+
+function SpecLine({
+  icon,
+  text,
+  extra,
+}: {
+  icon: string;
+  text: string;
+  extra?: React.ReactNode;
+}) {
+  return (
+    <li className="flex items-center gap-1.5 truncate">
+      <span className="shrink-0">{icon}</span>
+      <span className="truncate">{text}</span>
+      {extra && <span className="ml-auto shrink-0">{extra}</span>}
+    </li>
   );
 }
 

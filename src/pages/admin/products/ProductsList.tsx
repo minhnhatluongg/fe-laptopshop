@@ -4,6 +4,7 @@ import { useToast } from "@/context/ToastContext";
 import { productApi } from "@/api/product.api";
 import { brandApi } from "@/api/brand.api";
 import { categoryApi } from "@/api/category.api";
+import { bulkApi, type BulkJobType } from "@/api/bulk.api";
 import type { Brand, Category, Product, ProductFilter } from "@/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -20,8 +21,18 @@ import {
 } from "@/components/ui/Table";
 import { computeDiscountPrice, formatVND } from "@/utils/format";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
+import { useInventoryHub } from "@/hooks/useInventoryHub";
+import { cn } from "@/utils/cn";
 
 const PAGE_SIZES = [10, 20, 50] as const;
+
+// ─── Bulk action config ───────────────────────────────────────────────────────
+const BULK_ACTIONS: { type: BulkJobType; label: string; color: string }[] = [
+  { type: "ApplyDiscount", label: "Áp dụng giảm giá %", color: "brand" },
+  { type: "ApplyPrice",    label: "Thay đổi giá",        color: "brand" },
+  { type: "ToggleStatus",  label: "Đổi trạng thái",      color: "warning" },
+  { type: "Delete",        label: "Ẩn hàng loạt",        color: "error" },
+];
 
 export default function ProductsListPage() {
   const toast = useToast();
@@ -42,6 +53,77 @@ export default function ProductsListPage() {
   // Delete modal state
   const [toDelete, setToDelete] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  // ── Bulk action state ────────────────────────────────────────────────────
+  const [selected, setSelected]         = useState<Set<number>>(new Set());
+  const [bulkModalOpen, setBulkModalOpen] = useState(false);
+  const [activeBulkType, setActiveBulkType] = useState<BulkJobType>("ApplyDiscount");
+  const [discountInput, setDiscountInput]   = useState("10");
+  const [priceChangeInput, setPriceChangeInput] = useState("-5");
+  const [isActiveInput, setIsActiveInput]   = useState(false);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [runningJobs, setRunningJobs]       = useState<Array<{ jobId: string; message: string; progress: number }>>([]);
+
+  // SignalR — nhận BulkJobCompleted notification
+  useInventoryHub({
+    enabled: true,
+    group: "admin",
+    onBulkJobCompleted: (e) => {
+      setRunningJobs((prev) => prev.filter((j) => j.jobId !== e.jobId));
+      toast.success("Tác vụ hoàn thành", e.message);
+      void load(); // Refresh product list
+    },
+    onBulkJobProgress: (e) => {
+      setRunningJobs((prev) =>
+        prev.map((j) => j.jobId === e.jobId
+          ? { ...j, progress: e.progressPercent }
+          : j));
+    },
+  });
+
+  const allSelected = products.length > 0 && products.every((p) => selected.has(p.id));
+  const someSelected = selected.size > 0;
+
+  const toggleSelectAll = () => {
+    if (allSelected) setSelected(new Set());
+    else setSelected(new Set(products.map((p) => p.id)));
+  };
+
+  const toggleSelect = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const openBulkModal = (type: BulkJobType) => {
+    setActiveBulkType(type);
+    setBulkModalOpen(true);
+  };
+
+  const submitBulk = async () => {
+    if (selected.size === 0) return;
+    setBulkSubmitting(true);
+    try {
+      const body: Parameters<typeof bulkApi.execute>[0] = {
+        productIds: Array.from(selected),
+        type: activeBulkType,
+        ...(activeBulkType === "ApplyDiscount" && { discountValue: parseFloat(discountInput) }),
+        ...(activeBulkType === "ApplyPrice"    && { priceChangePercent: parseFloat(priceChangeInput) }),
+        ...(activeBulkType === "ToggleStatus"  && { isActive: isActiveInput }),
+      };
+      const result = await bulkApi.execute(body);
+      setRunningJobs((prev) => [...prev, { jobId: result.jobId, message: result.message, progress: 0 }]);
+      toast.info(`Job #${result.jobId} đang chạy`, result.message);
+      setBulkModalOpen(false);
+      setSelected(new Set());
+    } catch (e) {
+      toast.error("Gửi tác vụ thất bại", e instanceof Error ? e.message : undefined);
+    } finally {
+      setBulkSubmitting(false);
+    }
+  };
 
   const filter = useMemo<ProductFilter>(
     () => ({
@@ -123,6 +205,52 @@ export default function ProductsListPage() {
         </Link>
       </div>
 
+      {/* ── Running jobs strip ─────────────────────────────────────────── */}
+      {runningJobs.length > 0 && (
+        <div className="space-y-2">
+          {runningJobs.map((job) => (
+            <div key={job.jobId}
+              className="flex items-center gap-3 rounded-xl border border-brand-200 bg-brand-50 px-4 py-2.5 dark:border-brand-500/30 dark:bg-brand-500/10">
+              <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-300 border-t-brand-500" />
+              <span className="text-theme-sm font-medium text-brand-700 dark:text-brand-300">
+                Job #{job.jobId} đang xử lý... {job.progress > 0 ? `${job.progress.toFixed(0)}%` : ""}
+              </span>
+              <div className="flex-1 overflow-hidden rounded-full bg-brand-200 dark:bg-brand-500/20">
+                <div className="h-1.5 rounded-full bg-brand-500 transition-all duration-300"
+                  style={{ width: `${Math.max(5, job.progress)}%` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* ── Bulk toolbar (hiện khi có ô được chọn) ───────────────────────── */}
+      {someSelected && (
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-brand-200 bg-brand-50 px-4 py-3 dark:border-brand-500/30 dark:bg-brand-500/10">
+          <span className="text-theme-sm font-semibold text-brand-700 dark:text-brand-300">
+            Đã chọn {selected.size} sản phẩm
+          </span>
+          <div className="flex flex-wrap gap-1.5">
+            {BULK_ACTIONS.map((action) => (
+              <button key={action.type} type="button"
+                onClick={() => openBulkModal(action.type)}
+                className={cn(
+                  "h-8 rounded-lg px-3 text-theme-xs font-medium transition-colors",
+                  action.color === "brand"   && "bg-brand-500 text-white hover:bg-brand-600",
+                  action.color === "warning" && "bg-warning-500 text-white hover:bg-warning-600",
+                  action.color === "error"   && "bg-error-500 text-white hover:bg-error-600",
+                )}>
+                {action.label}
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => setSelected(new Set())}
+            className="ml-auto text-theme-xs text-brand-500 hover:text-brand-700">
+            Bỏ chọn ×
+          </button>
+        </div>
+      )}
+
       {/* Filters */}
       <Card className="p-4 md:p-4">
         <div className="grid gap-3 md:grid-cols-[1fr_220px_220px]">
@@ -170,6 +298,12 @@ export default function ProductsListPage() {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="w-12">
+                <input type="checkbox" checked={allSelected}
+                  onChange={toggleSelectAll}
+                  className="h-4 w-4 rounded border-gray-300 accent-brand-500 cursor-pointer"
+                  title="Chọn tất cả" />
+              </TableHead>
               <TableHead className="w-[80px]">Ảnh</TableHead>
               <TableHead>Sản phẩm</TableHead>
               <TableHead className="w-[140px]">Thương hiệu</TableHead>
@@ -185,7 +319,7 @@ export default function ProductsListPage() {
               Array.from({ length: 5 }).map((_, i) => <SkeletonRow key={i} />)
             ) : products.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="py-10 text-center text-gray-500">
+                <TableCell colSpan={9} className="py-10 text-center text-gray-500">
                   Không có sản phẩm phù hợp.
                 </TableCell>
               </TableRow>
@@ -195,7 +329,16 @@ export default function ProductsListPage() {
                 const mainImg = p.mainImageUrl ?? null;
                 const finalPrice = computeDiscountPrice(p.price, p.discount);
                 return (
-                  <TableRow key={p.id}>
+                  <TableRow key={p.id}
+                    className={cn(selected.has(p.id) && "bg-brand-50/40 dark:bg-brand-500/5")}>
+                    {/* Checkbox */}
+                    <TableCell>
+                      <input type="checkbox"
+                        checked={selected.has(p.id)}
+                        onChange={() => toggleSelect(p.id)}
+                        className="h-4 w-4 rounded border-gray-300 accent-brand-500 cursor-pointer"
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className="h-12 w-12 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
                         <img
@@ -231,7 +374,20 @@ export default function ProductsListPage() {
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>{p.inStock ?? 0}</TableCell>
+                    <TableCell>
+                      <span className={cn(
+                        "inline-flex items-center gap-1 font-medium",
+                        (p.inStock ?? 0) === 0
+                          ? "text-error-600 dark:text-error-400"
+                          : (p.inStock ?? 0) < 5
+                          ? "text-warning-600 dark:text-warning-400"
+                          : "text-gray-700 dark:text-gray-300",
+                      )}>
+                        {(p.inStock ?? 0) === 0 && <span title="Hết hàng">⚠</span>}
+                        {(p.inStock ?? 0) > 0 && (p.inStock ?? 0) < 5 && <span title="Sắp hết">!</span>}
+                        {p.inStock ?? 0}
+                      </span>
+                    </TableCell>
                     <TableCell>
                       <Badge
                         color={p.isActive ? "success" : "light"}
@@ -399,6 +555,82 @@ export default function ProductsListPage() {
           từng được đặt hàng.
         </p>
       </Modal>
+
+      {/* ── Bulk Action Modal ─────────────────────────────────────────── */}
+      <Modal
+        open={bulkModalOpen}
+        onClose={() => !bulkSubmitting && setBulkModalOpen(false)}
+        title={BULK_ACTIONS.find((a) => a.type === activeBulkType)?.label ?? "Hành động hàng loạt"}
+        description={`Áp dụng cho ${selected.size} sản phẩm đã chọn. Tác vụ chạy nền — bạn có thể tiếp tục làm việc.`}
+        size="sm"
+        footer={
+          <>
+            <Button variant="outline" onClick={() => setBulkModalOpen(false)} disabled={bulkSubmitting}>
+              Huỷ
+            </Button>
+            <Button onClick={() => void submitBulk()} disabled={bulkSubmitting}>
+              {bulkSubmitting ? "Đang gửi..." : `Xác nhận — ${selected.size} SP`}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          {activeBulkType === "ApplyDiscount" && (
+            <div>
+              <label className="mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-300">
+                Mức giảm giá (%)
+              </label>
+              <input type="number" min="0" max="100" value={discountInput}
+                onChange={(e) => setDiscountInput(e.target.value)}
+                className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-theme-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 focus:border-brand-400 focus:outline-none"
+                placeholder="10" />
+              <p className="mt-1 text-theme-xs text-gray-500">
+                Ví dụ: 10 → tất cả {selected.size} sản phẩm sẽ có Discount = 10%
+              </p>
+            </div>
+          )}
+
+          {activeBulkType === "ApplyPrice" && (
+            <div>
+              <label className="mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-300">
+                Thay đổi giá (%)
+              </label>
+              <input type="number" value={priceChangeInput}
+                onChange={(e) => setPriceChangeInput(e.target.value)}
+                className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-theme-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 focus:border-brand-400 focus:outline-none"
+                placeholder="-5" />
+              <p className="mt-1 text-theme-xs text-gray-500">
+                -5 = giảm 5% · +10 = tăng 10% · Ví dụ giá 20tr → -5% → 19tr
+              </p>
+            </div>
+          )}
+
+          {activeBulkType === "ToggleStatus" && (
+            <div>
+              <label className="mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-300">
+                Đặt trạng thái
+              </label>
+              <select value={isActiveInput ? "1" : "0"}
+                onChange={(e) => setIsActiveInput(e.target.value === "1")}
+                className="h-11 w-full rounded-lg border border-gray-200 bg-white px-3 text-theme-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200 focus:border-brand-400 focus:outline-none">
+                <option value="1">Đang bán (Active)</option>
+                <option value="0">Tạm ẩn (Inactive)</option>
+              </select>
+            </div>
+          )}
+
+          {activeBulkType === "Delete" && (
+            <div className="rounded-xl bg-error-50 p-4 dark:bg-error-500/10">
+              <p className="text-theme-sm font-medium text-error-600 dark:text-error-400">
+                ⚠️ {selected.size} sản phẩm sẽ bị ẩn khỏi storefront (soft delete — không xoá DB).
+              </p>
+              <p className="mt-1 text-theme-xs text-error-500">
+                Bạn có thể khôi phục bằng cách đổi trạng thái về "Đang bán".
+              </p>
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }
@@ -406,9 +638,8 @@ export default function ProductsListPage() {
 function SkeletonRow() {
   return (
     <TableRow>
-      <TableCell>
-        <div className="h-12 w-12 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" />
-      </TableCell>
+      <TableCell><div className="h-4 w-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" /></TableCell>
+      <TableCell><div className="h-12 w-12 animate-pulse rounded-lg bg-gray-100 dark:bg-gray-800" /></TableCell>
       {Array.from({ length: 7 }).map((_, i) => (
         <TableCell key={i}>
           <div className="h-4 animate-pulse rounded bg-gray-100 dark:bg-gray-800" />

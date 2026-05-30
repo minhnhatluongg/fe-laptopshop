@@ -1,6 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import { productDetailApi } from "@/api";
+import { cartApi } from "@/api/cart.api";
+import { emitCartUpdated, flyToCart } from "@/utils/cartEvents";
+import { guestCart } from "@/utils/guestCart";
 import type {
   CurrentUserContext,
   ProductComment,
@@ -30,7 +33,7 @@ const ADMIN_ROLES = ["Admin", "Manager"];
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
-  const { user } = useAuth();
+  const { user, isAuthenticated } = useAuth();
   const toast = useToast();
 
   // Param có thể là slug ("apple-macbook-pro-...") hoặc id ("1") — hỗ trợ cả hai.
@@ -96,6 +99,35 @@ export default function ProductDetailPage() {
 
   const canDelete = (ownerId: number | null | undefined) =>
     !!user && (user.id === ownerId || ADMIN_ROLES.includes(user.role));
+
+  // ----- Cart -----
+  const [qty, setQty] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
+  const addBtnRef = useRef<HTMLButtonElement>(null);
+
+  const handleAddToCart = async () => {
+    if (!productId) return;
+    setAddingToCart(true);
+    try {
+      if (isAuthenticated) {
+        await cartApi.addItem(productId, qty);
+        emitCartUpdated(qty);
+      } else {
+        // GUEST — lưu local, không gọi API
+        guestCart.add(productId, qty);
+        toast.info(
+          "🎁 Đăng ký để nhận ưu đãi",
+          "Thành viên được tặng coupon và tích điểm khi mua hàng.",
+        );
+      }
+      flyToCart(addBtnRef.current);
+      toast.success("Đã thêm vào giỏ hàng!", product?.name);
+    } catch (e) {
+      toast.error("Thêm vào giỏ thất bại", e instanceof Error ? e.message : undefined);
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   // ----- Actions -----
   const handleSubmitComment = async (e: React.FormEvent) => {
@@ -279,15 +311,55 @@ export default function ProductDetailPage() {
             ) : null}
           </div>
 
-          <div className="mt-3">
+          <div className="mt-3 flex items-center gap-3">
             {(product.inStock ?? 0) > 0 ? (
-              <Badge color="success" variant="light">
-                Còn hàng ({product.inStock})
-              </Badge>
+              <Badge color="success" variant="light">Còn hàng ({product.inStock})</Badge>
             ) : (
               <Badge color="error" variant="light">Hết hàng</Badge>
             )}
           </div>
+
+          {/* ─── Quantity + CTA ──────────────────────────────── */}
+          {(product.inStock ?? 0) > 0 && (
+            <div className="mt-5 space-y-3">
+              {/* Quantity stepper */}
+              <div className="flex items-center gap-3">
+                <span className="text-theme-sm font-medium text-gray-700 dark:text-gray-300">Số lượng:</span>
+                <div className="flex items-center rounded-xl border border-gray-200 dark:border-gray-700">
+                  <button type="button"
+                    onClick={() => setQty((q) => Math.max(1, q - 1))}
+                    className="flex h-10 w-10 items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 rounded-l-xl text-lg">−</button>
+                  <span className="w-10 text-center text-theme-sm font-semibold text-gray-800 dark:text-white">{qty}</span>
+                  <button type="button"
+                    onClick={() => setQty((q) => Math.min(product.inStock ?? 99, q + 1))}
+                    className="flex h-10 w-10 items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 rounded-r-xl text-lg">+</button>
+                </div>
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-3">
+                <button ref={addBtnRef} type="button"
+                  onClick={() => void handleAddToCart()}
+                  disabled={addingToCart}
+                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border-2 border-brand-500 text-base font-semibold text-brand-600 transition hover:bg-brand-50 disabled:opacity-60 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10">
+                  {addingToCart ? (
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-300 border-t-brand-500" />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+                      <path d="M1 1h4l2.68 13.39A2 2 0 0 0 9.62 16h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+                    </svg>
+                  )}
+                  Thêm vào giỏ
+                </button>
+                <Link to="/cart"
+                  className="flex h-12 flex-1 items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white transition hover:bg-brand-600"
+                  onClick={() => void handleAddToCart()}>
+                  Mua ngay
+                </Link>
+              </div>
+            </div>
+          )}
 
           {product.description && (
             <p className="mt-4 whitespace-pre-line text-theme-sm text-gray-600 dark:text-gray-300">

@@ -146,6 +146,20 @@ export interface Product {
   brand?: Brand | null;
   productImages?: ProductImage[];
   productSpecifications?: ProductSpecification[];
+
+  // Specs tóm tắt — backend trả từ ProductSpecifications.First() để hiển thị trên card
+  cpu?: string | null;
+  gpu?: string | null;
+  ram?: string | null;
+  storage?: string | null;
+  screen?: string | null;
+  battery?: string | null;
+  weight?: string | null;
+
+  // Review summary
+  averageRating?: number;
+  totalReviews?: number;
+  totalComments?: number;
 }
 
 export interface CreateProductRequest {
@@ -169,6 +183,8 @@ export interface ProductFilter extends PaginationQuery {
   brandId?: number;
   minPrice?: number;
   maxPrice?: number;
+  minDiscount?: number;
+  maxDiscount?: number;
   isActive?: boolean;
 }
 
@@ -243,9 +259,12 @@ export interface Order {
 
 export interface CreateOrderRequest {
   items: { productId: number; quantity: number }[];
-  shippingAddress?: string;
+  createFromCart?: boolean;      // true = lấy từ giỏ hàng thay vì items[]
+  shippingAddressId?: number;
   paymentMethod?: string;
-  userAddressId?: number;
+  shippingMethod?: string;
+  discountCode?: string;
+  notes?: string;
 }
 
 export interface UpdateOrderStatusRequest {
@@ -259,11 +278,18 @@ export interface UpdateOrderStatusRequest {
 // ---------- Shopping Cart ----------
 export interface CartItem {
   id: number;
+  shoppingCartId?: number;
   productId: number;
-  product?: Product | null;
+  // Flat fields từ ShoppingCartItemDto (backend)
+  productName: string;
+  productImageUrl?: string | null;
   quantity: number;
   unitPrice: number;
-  subtotal: number;
+  totalPrice: number;   // = unitPrice * quantity (giá đã nhân số lượng)
+  addedAt?: string;
+  isInStock?: boolean;
+  // legacy compat — một số nơi dùng subtotal, map sang totalPrice
+  subtotal?: number;
 }
 
 export interface ShoppingCart {
@@ -476,77 +502,3 @@ export interface CreateProductReviewRequest {
   comment?: string | null;
 }
 
-// ---------- Product Detail (page) ----------
-export interface ProductDetail {
-  id: number;
-  name: string;
-  slug: string;
-  description?: string | null;
-  price: number;
-  discount?: number | null;
-  inStock?: number | null;
-  isActive: boolean;
-  categoryId?: number | null;
-  categoryName?: string | null;
-  brandId?: number | null;
-  brandName?: string | null;
-  images: ProductImage[];
-  specification?: ProductSpecification | null;
-  averageRating: number;
-  totalReviews: number;
-  totalComments: number;
-  ratingBreakdown: Record<string, number>;
-}
-
-export interface CurrentUserContext {
-  isAuthenticated: boolean;
-  userId?: number | null;
-  fullName?: string | null;
-  avatarUrl?: string | null;
-  role?: string | null;
-  loyaltyTierName?: string | null;
-  hasPurchasedThisProduct: boolean;
-  canComment: boolean;
-  canReview: boolean;
-}
-
-export interface ProductComment {
-  id: number;
-  productId: number;
-  userId: number;
-  userFullName?: string | null;
-  userAvatarUrl?: string | null;
-  content: string;
-  parentCommentId?: number | null;
-  createdAt: string;
-  /** User comment đã mua chính sản phẩm này chưa */
-  hasPurchasedThisProduct: boolean;
-  /** Danh hiệu thành viên (vd: Đồng/Bạc/Vàng) */
-  loyaltyTierName?: string | null;
-}
-
-export interface CreateProductCommentRequest {
-  productId: number;
-  content: string;
-  parentCommentId?: number | null;
-}
-
-export interface ProductReview {
-  id: number;
-  productId: number;
-  userId?: number | null;
-  userFullName?: string | null;
-  userAvatarUrl?: string | null;
-  rating?: number | null;
-  comment?: string | null;
-  createdAt?: string | null;
-  /** True nếu user review đã mua chính sản phẩm này */
-  isVerifiedPurchase: boolean;
-  loyaltyTierName?: string | null;
-}
-
-export interface CreateProductReviewRequest {
-  productId: number;
-  rating: number;
-  comment?: string | null;
-}

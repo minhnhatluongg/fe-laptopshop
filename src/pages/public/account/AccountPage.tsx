@@ -104,12 +104,25 @@ export function ProfileTab() {
     try {
       const uploaded = await fileApi.upload(file, setAvatarProgress, "avatars");
       const res = await authApi.updateAvatar(uploaded.sysFileId);
+      // Fix #3: cập nhật local profile state + refresh AuthContext
       setProfile((prev) => prev ? { ...prev, avatarUrl: res.avatarUrl } : prev);
-      await refresh();
+      await refresh(); // AuthContext.user.avatarUrl cập nhật → Header re-render
     } catch (e) {
       setError(e instanceof Error ? e.message : "Upload avatar thất bại");
     } finally {
       setAvatarUploading(false);
+    }
+  };
+
+  const handleDeleteAvatar = async () => {
+    if (!profile?.avatarUrl) return;
+    if (!confirm("Xoá ảnh đại diện?")) return;
+    try {
+      await authApi.deleteAvatar();
+      setProfile((prev) => prev ? { ...prev, avatarUrl: null } : prev);
+      await refresh(); // cập nhật Header
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Xoá avatar thất bại");
     }
   };
 
@@ -134,16 +147,27 @@ export function ProfileTab() {
               </div>
             )}
           </div>
-          <div>
+          <div className="space-y-2">
+            <div className="flex flex-wrap gap-2">
             <button
               type="button"
               disabled={avatarUploading}
               onClick={() => fileInputRef.current?.click()}
               className="inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-theme-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
             >
-              {avatarUploading ? "Đang tải..." : "Thay đổi ảnh"}
+              {avatarUploading ? `Đang tải... ${avatarProgress}%` : "Thay đổi ảnh"}
             </button>
-            <p className="mt-1.5 text-theme-xs text-gray-500">JPG, PNG, WEBP — tối đa 5MB</p>
+            {profile?.avatarUrl && (
+              <button
+                type="button"
+                onClick={() => void handleDeleteAvatar()}
+                className="inline-flex h-10 items-center rounded-lg border border-error-200 px-4 text-theme-sm font-medium text-error-500 hover:bg-error-50 dark:border-error-500/30 dark:hover:bg-error-500/10"
+              >
+                Xoá ảnh
+              </button>
+            )}
+            </div>
+            <p className="text-theme-xs text-gray-500">JPG, PNG, WEBP — tối đa 5MB</p>
             <input
               ref={fileInputRef}
               type="file"

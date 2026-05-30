@@ -7,6 +7,7 @@ import {
   useState,
 } from "react";
 import { authApi } from "@/api/auth.api";
+import { cartApi } from "@/api/cart.api";
 import { authStorage } from "@/api/client";
 import { useToast } from "@/context/ToastContext";
 import type {
@@ -73,7 +74,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       accessTokenExpiration: res.accessTokenExpiration,
     });
     setUser(res.user);
+    // Merge guest_cart (localStorage) → server cart, sau đó xóa local.
+    void mergeGuestCart();
     return res.user;
+  };
+
+  /** Đọc guest_cart trong localStorage, gọi cartApi.addItem cho từng item, rồi clear. */
+  const mergeGuestCart = async () => {
+    try {
+      const raw = localStorage.getItem("guest_cart");
+      if (!raw) return;
+      const items: Array<{ productId: number; quantity: number }> = JSON.parse(raw);
+      if (!Array.isArray(items) || items.length === 0) return;
+
+      for (const it of items) {
+        try {
+          await cartApi.addItem(it.productId, it.quantity);
+        } catch {
+          /* skip lỗi item lẻ để không chặn merge */
+        }
+      }
+      localStorage.removeItem("guest_cart");
+      window.dispatchEvent(new CustomEvent("cart:updated"));
+    } catch {
+      /* localStorage có thể bị disable, im lặng */
+    }
   };
 
   const login = useCallback(async (body: LoginRequest) => {

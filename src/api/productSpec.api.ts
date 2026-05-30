@@ -24,6 +24,14 @@ export const productSpecApi = {
       ),
     ),
 
+  // Lấy spec theo productId — dùng cho form + detail page
+  getByProductId: (productId: number) =>
+    unwrap(
+      apiClient.get<ApiResponse<ProductSpecification | null>>(
+        `${BASE}/GetByProductId/${productId}`,
+      ),
+    ),
+
   create: (body: Omit<ProductSpecification, "id">) =>
     unwrap(
       apiClient.post<ApiResponse<ProductSpecification>>(

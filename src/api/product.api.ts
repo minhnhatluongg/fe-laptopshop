@@ -24,6 +24,12 @@ export const productApi = {
       apiClient.get<ApiResponse<Product>>(`${BASE}/GetProductById/${id}`),
     ),
 
+  /** Lấy nhanh nhiều sản phẩm theo IDs — dùng cho guest cart hydrate. */
+  getBatch: (ids: number[]) =>
+    unwrap(
+      apiClient.post<ApiResponse<Product[]>>(`${BASE}/batch`, { ids }),
+    ),
+
   // Admin
   create: (body: CreateProductRequest) =>
     unwrap(apiClient.post<ApiResponse<Product>>(`${BASE}/CreateProduct`, body)),
