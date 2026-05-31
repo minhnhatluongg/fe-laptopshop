@@ -66,6 +66,12 @@ const navGroups: NavGroup[] = [
         to: "/admin/banners",
         icon: <Icon d="M4 5a1 1 0 0 0-1 1v4a1 1 0 0 0 1 1h16a1 1 0 0 0 1-1V6a1 1 0 0 0-1-1H4zM3 13h18M3 17h18" />,
       },
+      {
+        key: "showrooms",
+        label: "Showroom",
+        to: "/admin/showrooms",
+        icon: <Icon d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z M12 10m-3 0a3 3 0 1 0 6 0a3 3 0 1 0-6 0" />,
+      },
     ],
   },
   {

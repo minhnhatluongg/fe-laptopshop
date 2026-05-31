@@ -339,8 +339,42 @@ function ProductCard({ product: p }: {
 }) {
   const finalPrice  = computeDiscountPrice(p.price, p.discount);
   const hasDiscount = (p.discount ?? 0) > 0;
-  const imgSrc      = p.mainImageUrl ? getImageUrl(p.mainImageUrl) : IMAGE_PLACEHOLDER;
   const specs       = parseSpecs(p);
+
+  // Ảnh: main trước, rồi các ảnh còn lại theo displayOrder
+  const images = (() => {
+    if (p.productImages && p.productImages.length > 0) {
+      return [...p.productImages]
+        .filter((i) => i.isActive !== false && i.imageUrl)
+        .sort((a, b) => {
+          if (a.isMain && !b.isMain) return -1;
+          if (!a.isMain && b.isMain) return 1;
+          return (a.displayOrder ?? 0) - (b.displayOrder ?? 0);
+        })
+        .map((i) => i.imageUrl as string);
+    }
+    return p.mainImageUrl ? [p.mainImageUrl] : [""];
+  })();
+
+  const [idx, setIdx] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const handleMouseEnter = () => {
+    if (images.length < 2) return;
+    let cur = 1;
+    setIdx(cur);
+    timerRef.current = setInterval(() => {
+      cur = cur >= images.length - 1 ? 1 : cur + 1;
+      setIdx(cur);
+    }, 800);
+  };
+
+  const handleMouseLeave = () => {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    setIdx(0);
+  };
+
+  useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   return (
     <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all hover:-translate-y-1 hover:shadow-theme-lg dark:border-gray-800 dark:bg-white/[0.03]">
@@ -352,14 +386,35 @@ function ProductCard({ product: p }: {
       )}
 
       {/* Image */}
-      <Link to={`/products/${p.slug}`} className="block aspect-[4/3] overflow-hidden bg-gray-50 dark:bg-gray-800/50 p-2">
-        <img
-          src={imgSrc}
-          onError={(e) => { (e.target as HTMLImageElement).src = IMAGE_PLACEHOLDER; }}
-          alt={p.name}
-          className="h-full w-full object-contain transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
+      <Link
+        to={`/products/${p.slug}`}
+        className="relative block aspect-4/3 overflow-hidden bg-gray-50 dark:bg-gray-800/50 p-2"
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+      >
+        {images.map((url, i) => (
+          <img
+            key={url + i}
+            src={getImageUrl(url) || IMAGE_PLACEHOLDER}
+            onError={(e) => { (e.target as HTMLImageElement).src = IMAGE_PLACEHOLDER; }}
+            alt={p.name}
+            loading="lazy"
+            className={cn(
+              "absolute inset-0 h-full w-full object-contain p-2 transition-opacity duration-500",
+              i === idx ? "opacity-100" : "opacity-0",
+            )}
+          />
+        ))}
+        {images.length > 1 && (
+          <div className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            {images.map((_, i) => (
+              <span
+                key={i}
+                className={cn("h-1 rounded-full transition-all", i === idx ? "w-3 bg-brand-500" : "w-1 bg-gray-300")}
+              />
+            ))}
+          </div>
+        )}
       </Link>
 
       {/* Content */}

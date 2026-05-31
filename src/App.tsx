@@ -18,10 +18,14 @@ const AdminProductForm    = lazy(() => import("@/pages/admin/products/ProductFor
 const ChangePasswordTab   = lazy(() => import("@/pages/public/account/ChangePasswordTab"));
 const WalletTab           = lazy(() => import("@/pages/public/account/WalletTab"));
 const AdminBannersPage    = lazy(() => import("@/pages/admin/banners/BannersPage"));
+const AdminShowroomsPage  = lazy(() => import("@/pages/admin/showrooms/ShowroomsPage"));
 const ProductsPage        = lazy(() => import("@/pages/public/ProductsPage"));
 const ProductDetailPage   = lazy(() => import("@/pages/public/ProductDetailPage"));
 const BrandsPage          = lazy(() => import("@/pages/public/BrandsPage"));
 const CartPage            = lazy(() => import("@/pages/public/CartPage"));
+const SalePage            = lazy(() => import("@/pages/public/SalePage"));
+const ContactPage         = lazy(() => import("@/pages/public/ContactPage"));
+const WarrantyPage        = lazy(() => import("@/pages/public/WarrantyPage"));
 
 function Loading() {
   return (
@@ -44,8 +48,9 @@ export default function App() {
               <Route path="products" element={<ProductsPage />} />
               <Route path="products/:slug" element={<ProductDetailPage />} />
               <Route path="brands" element={<BrandsPage />} />
-              <Route path="sale" element={<AdminPlaceholder title="Khuyến mãi" />} />
-              <Route path="contact" element={<AdminPlaceholder title="Liên hệ" />} />
+              <Route path="sale"     element={<SalePage />} />
+              <Route path="contact"  element={<ContactPage />} />
+              <Route path="warranty" element={<WarrantyPage />} />
               <Route path="cart" element={<CartPage />} />
 
               {/* Account — nested tabs */}
@@ -81,6 +86,7 @@ export default function App() {
               <Route path="users"        element={<AdminPlaceholder title="Quản lý người dùng" />} />
               <Route path="roles"        element={<AdminPlaceholder title="Phân quyền" />} />
               <Route path="banners"      element={<AdminBannersPage />} />
+              <Route path="showrooms"    element={<AdminShowroomsPage />} />
             </Route>
 
             <Route path="*" element={<NotFoundPage />} />

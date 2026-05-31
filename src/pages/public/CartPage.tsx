@@ -75,8 +75,17 @@ export default function CartPage() {
 
   const updateQty = async (itemId: number, qty: number) => {
     if (qty < 0) return;
-    const updated = await (qty === 0 ? cartApi.removeItem(itemId) : cartApi.updateItem(itemId, qty));
-    setCart(updated);
+    try {
+      if (qty === 0) {
+        await cartApi.removeItem(itemId);
+      } else {
+        await cartApi.updateItem(itemId, qty);
+      }
+      const updated = await cartApi.get();
+      setCart(updated);
+    } catch (e) {
+      toast.error("Cập nhật giỏ hàng thất bại", e instanceof Error ? e.message : undefined);
+    }
   };
 
   const applyCoupon = async () => {

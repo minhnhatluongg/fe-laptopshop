@@ -14,8 +14,9 @@ const navLinks = [
   { label: "Trang chủ",   to: "/" },
   { label: "Sản phẩm",    to: "/products" },
   { label: "Thương hiệu", to: "/brands" },
-  { label: "Khuyến mãi",  to: "/sale" },
-  { label: "Liên hệ",     to: "/contact" },
+  { label: "Khuyến mãi",       to: "/sale" },
+  { label: "Liên hệ",          to: "/contact" },
+  { label: "Tra cứu bảo hành", to: "/warranty" },
 ];
 
 export function PublicHeader() {

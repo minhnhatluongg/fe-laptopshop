@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { productDetailApi } from "@/api";
 import { cartApi } from "@/api/cart.api";
+import { variantApi, type ProductVariantDto } from "@/api/variant.api";
 import { emitCartUpdated, flyToCart } from "@/utils/cartEvents";
 import { guestCart } from "@/utils/guestCart";
 import type {
@@ -99,6 +100,51 @@ export default function ProductDetailPage() {
 
   const canDelete = (ownerId: number | null | undefined) =>
     !!user && (user.id === ownerId || ADMIN_ROLES.includes(user.role));
+
+  // ----- Variants -----
+  const [variants, setVariants] = useState<ProductVariantDto[]>([]);
+  const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!productId) return;
+    variantApi.getByProduct(productId).then(setVariants).catch(() => {});
+  }, [productId]);
+
+  // Group attribute options from all active variants
+  const attrGroups = useMemo(() => {
+    const map = new Map<string, string[]>();
+    variants.filter((v) => v.isActive).forEach((v) => {
+      v.attributes.forEach((a) => {
+        if (!map.has(a.attributeName)) map.set(a.attributeName, []);
+        if (!map.get(a.attributeName)!.includes(a.value))
+          map.get(a.attributeName)!.push(a.value);
+      });
+    });
+    return Array.from(map.entries()).map(([name, values]) => ({ name, values }));
+  }, [variants]);
+
+  // Find matched variant from current selection
+  const selectedVariant = useMemo<ProductVariantDto | null>(() => {
+    if (attrGroups.length === 0) return null;
+    const selCount = Object.keys(selectedAttrs).length;
+    if (selCount === 0) return null;
+    return variants.find(
+      (v) =>
+        v.isActive &&
+        v.attributes.length === attrGroups.length &&
+        attrGroups.every(({ name }) => {
+          const sel = selectedAttrs[name];
+          return sel && v.attributes.some((a) => a.attributeName === name && a.value === sel);
+        }),
+    ) ?? null;
+  }, [selectedAttrs, variants, attrGroups]);
+
+  const allAttrsSelected = attrGroups.length > 0 && attrGroups.every(({ name }) => !!selectedAttrs[name]);
+
+  // Effective price / stock (from variant if selected, else product)
+  const effectivePrice    = selectedVariant?.price ?? null;
+  const effectiveCompare  = selectedVariant?.compareAtPrice ?? null;
+  const effectiveStock    = selectedVariant != null ? selectedVariant.stockQuantity : (product?.inStock ?? 0);
 
   // ----- Cart -----
   const [qty, setQty] = useState(1);
@@ -297,30 +343,73 @@ export default function ProductDetailPage() {
 
           <div className="mt-5 flex items-baseline gap-3">
             <span className="text-3xl font-bold text-error-500">
-              {formatVND(finalPrice)}
+              {formatVND(effectivePrice ?? finalPrice)}
             </span>
-            {product.discount ? (
+            {effectivePrice != null ? (
+              effectiveCompare != null && effectiveCompare > effectivePrice ? (
+                <span className="text-lg text-gray-400 line-through">{formatVND(effectiveCompare)}</span>
+              ) : null
+            ) : product.discount ? (
               <>
-                <span className="text-lg text-gray-400 line-through">
-                  {formatVND(product.price)}
-                </span>
-                <Badge color="error" variant="light">
-                  -{product.discount}%
-                </Badge>
+                <span className="text-lg text-gray-400 line-through">{formatVND(product.price)}</span>
+                <Badge color="error" variant="light">-{product.discount}%</Badge>
               </>
             ) : null}
           </div>
 
           <div className="mt-3 flex items-center gap-3">
-            {(product.inStock ?? 0) > 0 ? (
-              <Badge color="success" variant="light">Còn hàng ({product.inStock})</Badge>
+            {effectiveStock > 0 ? (
+              <Badge color="success" variant="light">Còn hàng ({effectiveStock})</Badge>
             ) : (
               <Badge color="error" variant="light">Hết hàng</Badge>
             )}
           </div>
 
+          {/* ─── Variant selector ────────────────────────────── */}
+          {attrGroups.length > 0 && (
+            <div className="mt-5 space-y-4">
+              {attrGroups.map(({ name, values }) => (
+                <div key={name}>
+                  <p className="mb-2 text-theme-sm font-medium text-gray-700 dark:text-gray-300">
+                    {name}:
+                    {selectedAttrs[name] && (
+                      <span className="ml-1 font-semibold text-brand-600 dark:text-brand-400">
+                        {selectedAttrs[name]}
+                      </span>
+                    )}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {values.map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() =>
+                          setSelectedAttrs((prev) => ({
+                            ...prev,
+                            [name]: prev[name] === val ? "" : val,
+                          }))
+                        }
+                        className={cn(
+                          "rounded-lg border px-3 py-1.5 text-theme-sm font-medium transition",
+                          selectedAttrs[name] === val
+                            ? "border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-500/10 dark:text-brand-400"
+                            : "border-gray-200 text-gray-700 hover:border-gray-400 dark:border-gray-700 dark:text-gray-300",
+                        )}
+                      >
+                        {val}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+              {allAttrsSelected && !selectedVariant && (
+                <p className="text-theme-sm text-error-500">Cấu hình này hiện không khả dụng.</p>
+              )}
+            </div>
+          )}
+
           {/* ─── Quantity + CTA ──────────────────────────────── */}
-          {(product.inStock ?? 0) > 0 && (
+          {effectiveStock > 0 && (!attrGroups.length || (allAttrsSelected && selectedVariant)) && (
             <div className="mt-5 space-y-3">
               {/* Quantity stepper */}
               <div className="flex items-center gap-3">
@@ -331,7 +420,7 @@ export default function ProductDetailPage() {
                     className="flex h-10 w-10 items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 rounded-l-xl text-lg">−</button>
                   <span className="w-10 text-center text-theme-sm font-semibold text-gray-800 dark:text-white">{qty}</span>
                   <button type="button"
-                    onClick={() => setQty((q) => Math.min(product.inStock ?? 99, q + 1))}
+                    onClick={() => setQty((q) => Math.min(effectiveStock || 99, q + 1))}
                     className="flex h-10 w-10 items-center justify-center text-gray-500 hover:bg-gray-50 dark:hover:bg-white/5 rounded-r-xl text-lg">+</button>
                 </div>
               </div>
