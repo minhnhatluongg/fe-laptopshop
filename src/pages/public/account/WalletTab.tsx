@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { walletApi } from "@/api/wallet.api";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { RedeemResultModal, type RedeemResult } from "@/components/ui/RedeemResultModal";
 import type { WalletDto, WalletTransactionDto, WalletTransactionType } from "@/api/types";
 import { formatDateTime, formatVND } from "@/utils/format";
 import { cn } from "@/utils/cn";
@@ -192,9 +193,9 @@ function TransactionRow({ tx }: { tx: WalletTransactionDto }) {
  * Hợp lệ → cộng tiền + reload wallet/transactions ngay.
  * ──────────────────────────────────────────────────────────────────────── */
 function RedeemCodeBox({ onRedeemed }: { onRedeemed: () => void }) {
-  const toast = useToast();
-  const [code, setCode]       = useState("");
-  const [busy, setBusy]       = useState(false);
+  const [code, setCode]               = useState("");
+  const [busy, setBusy]               = useState(false);
+  const [result, setResult]           = useState<RedeemResult | null>(null);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,37 +203,51 @@ function RedeemCodeBox({ onRedeemed }: { onRedeemed: () => void }) {
     setBusy(true);
     try {
       const tx = await walletApi.redeemCode(code.trim().toUpperCase());
-      toast.success("Nạp ví thành công 🎉", `+${formatVND(tx.amount)}`);
+      setResult({ status: "success", amount: tx.amount, note: null });
       setCode("");
       onRedeemed();
-    } catch (e) {
-      toast.error("Mã không hợp lệ", (e as Error).message);
+    } catch {
+      // Show amount 0 on failed — we don't know the amount
+      setResult({ status: "failed", amount: 0, note: null });
     } finally {
       setBusy(false);
     }
   };
 
   return (
-    <form onSubmit={submit}
-      className="rounded-2xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/30 dark:bg-warning-500/10">
-      <div className="flex items-center gap-2">
-        <span className="text-xl">🎁</span>
-        <h3 className="text-base font-semibold text-warning-700 dark:text-warning-300">
-          Nhập mã quà tặng
-        </h3>
-      </div>
-      <p className="mt-1 text-theme-xs text-warning-700/80 dark:text-warning-300/80">
-        Nhập mã được tặng để cộng tiền vào ví. Mỗi mã chỉ dùng được 1 lần.
-      </p>
-      <div className="mt-3 flex gap-2">
-        <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
-          placeholder="VD: LS-AB12CD34EF"
-          className="h-10 flex-1 rounded-lg border border-warning-300 bg-white px-3 font-mono text-theme-sm uppercase dark:border-warning-500/30 dark:bg-gray-900" />
-        <button type="submit" disabled={busy || !code.trim()}
-          className="h-10 rounded-lg bg-warning-500 px-5 text-theme-sm font-semibold text-white hover:bg-warning-600 disabled:opacity-50">
-          {busy ? "Đang xử lý..." : "Nhận tiền"}
-        </button>
-      </div>
-    </form>
+    <>
+      <form onSubmit={submit}
+        className="rounded-2xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/30 dark:bg-warning-500/10">
+        <div className="flex items-center gap-2">
+          <span className="text-xl">🎁</span>
+          <h3 className="text-base font-semibold text-warning-700 dark:text-warning-300">
+            Nhập mã quà tặng
+          </h3>
+        </div>
+        <p className="mt-1 text-theme-xs text-warning-700/80 dark:text-warning-300/80">
+          Nhập mã được tặng để cộng tiền vào ví. Mỗi mã chỉ dùng được 1 lần.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <input value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
+            placeholder="VD: LS-AB12CD34EF"
+            className="h-10 flex-1 rounded-lg border border-warning-300 bg-white px-3 font-mono text-theme-sm uppercase dark:border-warning-500/30 dark:bg-gray-900" />
+          <button type="submit" disabled={busy || !code.trim()}
+            className="btn-press h-10 rounded-lg bg-warning-500 px-5 text-theme-sm font-semibold text-white transition-all hover:bg-warning-600 active:bg-warning-700 disabled:opacity-50 select-none">
+            {busy ? (
+              <span className="flex items-center gap-1.5">
+                <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Đang xử lý...
+              </span>
+            ) : "Nhận tiền"}
+          </button>
+        </div>
+      </form>
+
+      {/* Result modal */}
+      <RedeemResultModal result={result} onClose={() => setResult(null)} />
+    </>
   );
 }

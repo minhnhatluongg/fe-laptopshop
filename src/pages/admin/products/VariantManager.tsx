@@ -8,14 +8,92 @@ import {
 } from "@/api/variant.api";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { formatVND } from "@/utils/format";
 import { cn } from "@/utils/cn";
 
-interface Props { productId: number; }
+// ── Brand-specific attribute presets ─────────────────────────────────────────
+// Keys match attribute names from API; values match AttributeValueDto.value strings.
+const BRAND_PRESETS: Record<string, Record<string, string[]>> = {
+  Apple: {
+    CPU:      ["M3", "M3 Pro", "M3 Max", "M4", "M4 Pro", "M4 Max"],
+    GPU:      ["Integrated"],
+    RAM:      ["8GB", "16GB", "24GB", "36GB", "48GB"],
+    SSD:      ["256GB", "512GB", "1TB", "2TB"],
+    "Màu sắc": ["Space Black", "Space Gray", "Silver", "Midnight", "Starlight",
+                "Sky Blue", "Natural Titanium", "Black Titanium", "White Titanium"],
+  },
+  Dell: {
+    CPU:      ["Core Ultra 5", "Core Ultra 7", "Core Ultra 9"],
+    GPU:      ["RTX 4050", "RTX 4060", "RTX 4070", "RTX 4080", "Integrated"],
+    RAM:      ["16GB", "32GB", "64GB"],
+    SSD:      ["512GB", "1TB", "2TB"],
+    "Màu sắc": ["Platinum", "Silver", "Cosmic Black"],
+  },
+  HP: {
+    CPU:      ["Core Ultra 5", "Core Ultra 7"],
+    GPU:      ["RTX 4050", "RTX 4060", "Integrated"],
+    RAM:      ["8GB", "16GB", "32GB"],
+    SSD:      ["256GB", "512GB", "1TB"],
+    "Màu sắc": ["Silver", "Cosmic Black", "Midnight"],
+  },
+  Lenovo: {
+    CPU:      ["Core Ultra 5", "Core Ultra 7", "Ryzen 5", "Ryzen 7"],
+    GPU:      ["RTX 4050", "RTX 4060", "RTX 4070", "Integrated"],
+    RAM:      ["16GB", "32GB"],
+    SSD:      ["512GB", "1TB"],
+    "Màu sắc": ["Cosmic Black", "Silver", "Platinum"],
+  },
+  ASUS: {
+    CPU:      ["Core Ultra 5", "Core Ultra 7", "Core Ultra 9", "Ryzen 5", "Ryzen 7", "Ryzen 9"],
+    GPU:      ["RTX 4060", "RTX 4070", "RTX 4080", "RTX 4090", "Integrated"],
+    RAM:      ["16GB", "32GB", "64GB"],
+    SSD:      ["512GB", "1TB", "2TB"],
+    "Màu sắc": ["Cosmic Black", "Silver", "Midnight"],
+  },
+  Acer: {
+    CPU:      ["Core Ultra 5", "Core Ultra 7", "Ryzen 5", "Ryzen 7"],
+    GPU:      ["RTX 4050", "RTX 4060", "RTX 4070", "Integrated"],
+    RAM:      ["16GB", "32GB"],
+    SSD:      ["512GB", "1TB"],
+    "Màu sắc": ["Cosmic Black", "Silver", "Platinum"],
+  },
+  MSI: {
+    CPU:      ["Core Ultra 7", "Core Ultra 9"],
+    GPU:      ["RTX 4060", "RTX 4070", "RTX 4080", "RTX 4090", "RTX 5080", "RTX 5090"],
+    RAM:      ["16GB", "32GB", "64GB"],
+    SSD:      ["512GB", "1TB", "2TB"],
+    "Màu sắc": ["Cosmic Black", "Silver"],
+  },
+  Samsung: {
+    CPU:      ["Core Ultra 5", "Core Ultra 7", "Snapdragon X Plus", "Snapdragon X Elite"],
+    GPU:      ["Integrated", "Arc"],
+    RAM:      ["8GB", "16GB", "32GB"],
+    SSD:      ["256GB", "512GB", "1TB"],
+    "Màu sắc": ["Platinum", "Silver", "Cosmic Black", "Sky Blue"],
+  },
+  Razer: {
+    CPU:      ["Core Ultra 7", "Core Ultra 9"],
+    GPU:      ["RTX 4070", "RTX 4080", "RTX 4090"],
+    RAM:      ["16GB", "32GB", "64GB"],
+    SSD:      ["1TB", "2TB"],
+    "Màu sắc": ["Cosmic Black", "Silver"],
+  },
+  LG: {
+    CPU:      ["Core Ultra 5", "Core Ultra 7"],
+    GPU:      ["Integrated"],
+    RAM:      ["16GB", "32GB"],
+    SSD:      ["256GB", "512GB", "1TB"],
+    "Màu sắc": ["Silver", "Cosmic Black", "Platinum"],
+  },
+};
+
+interface Props { productId: number; brandName?: string; }
 
 type Step = "select" | "preview" | "manage";
 
-export function VariantManager({ productId }: Props) {
+export function VariantManager({ productId, brandName }: Props) {
+  const confirm = useConfirm();
   const [attributes, setAttributes]   = useState<ProductAttributeDto[]>([]);
   const [variants, setVariants]       = useState<ProductVariantDto[]>([]);
   const [loading, setLoading]         = useState(true);
@@ -58,6 +136,22 @@ export function VariantManager({ productId }: Props) {
       return next;
     });
   };
+
+  // Apply brand preset — match by attr.name and val.value strings
+  const applyBrandPreset = () => {
+    const preset = brandName ? BRAND_PRESETS[brandName] : null;
+    if (!preset || attributes.length === 0) return;
+    const next: Record<number, Set<number>> = {};
+    for (const attr of attributes) {
+      const presetValues = preset[attr.name];
+      if (!presetValues) continue;
+      const matched = attr.values.filter((v) => presetValues.includes(v.value));
+      if (matched.length > 0) next[attr.id] = new Set(matched.map((v) => v.id));
+    }
+    setSelected(next);
+  };
+
+  const hasPreset = brandName ? !!BRAND_PRESETS[brandName] : false;
 
   const selectedGroupCount = Object.values(selected).filter((s) => s.size > 0).length;
   const cartesianSize      = Object.values(selected).reduce((acc, s) => acc * (s.size || 1), selectedGroupCount > 0 ? 1 : 0);
@@ -107,7 +201,7 @@ export function VariantManager({ productId }: Props) {
   };
 
   const handleDeleteVariant = async (id: number) => {
-    if (!confirm("Xoá biến thể?")) return;
+    if (!await confirm({ title: "Xoá biến thể?", message: "Biến thể này sẽ bị xoá vĩnh viễn.", variant: "danger", confirmLabel: "Xoá", cancelLabel: "Huỷ" })) return;
     try {
       await variantApi.deleteVariant(id);
       setVariants((v) => v.filter((x) => x.id !== id));
@@ -188,32 +282,73 @@ export function VariantManager({ productId }: Props) {
       {/* ── Select: attribute value picker ── */}
       {step === "select" && (
         <div className="space-y-5">
+          {/* Brand preset banner */}
+          {hasPreset && (
+            <div className="flex items-center justify-between rounded-xl border border-indigo-100 bg-indigo-50 px-4 py-3 dark:border-indigo-500/20 dark:bg-indigo-500/10">
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">🎯</span>
+                <div>
+                  <p className="text-theme-sm font-semibold text-indigo-700 dark:text-indigo-300">
+                    Có preset cho <strong>{brandName}</strong>
+                  </p>
+                  <p className="text-theme-xs text-indigo-500 dark:text-indigo-400">
+                    Tự động chọn các thông số phổ biến của dòng {brandName}
+                  </p>
+                </div>
+              </div>
+              <button type="button" onClick={applyBrandPreset}
+                className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-indigo-500 px-4 text-theme-xs font-semibold text-white hover:bg-indigo-600 transition-colors">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12"/>
+                </svg>
+                Áp preset {brandName}
+              </button>
+            </div>
+          )}
+
           {attributes.length === 0 ? (
             <p className="text-theme-sm text-gray-500">Chưa có attribute nào. Chạy file <code>13_seed_attributes.sql</code> trước.</p>
           ) : (
-            attributes.map((attr) => (
-              <div key={attr.id}>
-                <h4 className="mb-2 text-theme-sm font-semibold text-gray-800 dark:text-white">{attr.name}</h4>
-                <div className="flex flex-wrap gap-2">
-                  {attr.values.map((val) => {
-                    const active = selected[attr.id]?.has(val.id) ?? false;
-                    return (
-                      <button key={val.id} type="button"
-                        onClick={() => toggleValue(attr.id, val.id)}
-                        className={cn(
-                          "rounded-lg border px-3 py-1.5 text-theme-sm font-medium transition-colors",
-                          active
-                            ? "border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
-                            : "border-gray-200 text-gray-700 hover:border-brand-300 dark:border-gray-700 dark:text-gray-300",
-                        )}>
-                        {val.value}
-                      </button>
-                    );
-                  })}
+            attributes.map((attr) => {
+              const presetVals = brandName ? (BRAND_PRESETS[brandName]?.[attr.name] ?? []) : [];
+              return (
+                <div key={attr.id}>
+                  <div className="mb-2 flex items-center gap-2">
+                    <h4 className="text-theme-sm font-semibold text-gray-800 dark:text-white">{attr.name}</h4>
+                    {presetVals.length > 0 && (
+                      <span className="rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold text-indigo-600 dark:bg-indigo-500/20 dark:text-indigo-400">
+                        {brandName} preset
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {attr.values.map((val) => {
+                      const active    = selected[attr.id]?.has(val.id) ?? false;
+                      const inPreset  = presetVals.includes(val.value);
+                      return (
+                        <button key={val.id} type="button"
+                          onClick={() => toggleValue(attr.id, val.id)}
+                          title={inPreset ? `Phổ biến với ${brandName}` : undefined}
+                          className={cn(
+                            "relative rounded-lg border px-3 py-1.5 text-theme-sm font-medium transition-colors",
+                            active
+                              ? "border-brand-500 bg-brand-50 text-brand-600 dark:bg-brand-500/15 dark:text-brand-400"
+                              : inPreset
+                              ? "border-indigo-200 bg-indigo-50/50 text-indigo-700 hover:border-indigo-400 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-300"
+                              : "border-gray-200 text-gray-500 hover:border-gray-300 dark:border-gray-700 dark:text-gray-400",
+                          )}>
+                          {val.value}
+                          {inPreset && !active && (
+                            <span className="absolute -right-1 -top-1 h-2 w-2 rounded-full bg-indigo-400" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
-            ))
-          )}
+              );
+            }))
+          }
 
           {/* Config */}
           <div className="grid gap-4 rounded-2xl border border-gray-200 bg-gray-50 p-4 sm:grid-cols-3 dark:border-gray-700 dark:bg-white/[0.02]">

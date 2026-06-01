@@ -1,11 +1,12 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Gift } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/context/ToastContext";
 import { productApi } from "@/api/product.api";
 import { brandApi } from "@/api/brand.api";
 import { categoryApi } from "@/api/category.api";
 import { bulkApi, type BulkJobType } from "@/api/bulk.api";
-import { productGiftApi } from "@/api/productGift.api";
+import { productGiftApi, type ProductGiftDto } from "@/api/productGift.api";
 import type { Brand, Category, Product, ProductFilter } from "@/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -24,6 +25,101 @@ import { computeDiscountPrice, formatVND } from "@/utils/format";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
 import { useInventoryHub } from "@/hooks/useInventoryHub";
 import { cn } from "@/utils/cn";
+
+// ─── Gift badge with hover tooltip (lazy-loads gifts on first hover) ─────────
+function GiftBadge({ productId }: { productId: number }) {
+  const [gifts, setGifts]         = useState<ProductGiftDto[] | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const [visible, setVisible]     = useState(false);
+  const timeoutRef                = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const containerRef              = useRef<HTMLDivElement>(null);
+
+  const fetchIfNeeded = async () => {
+    if (gifts !== null || loading) return;
+    setLoading(true);
+    try {
+      setGifts(await productGiftApi.getByProduct(productId));
+    } catch {
+      setGifts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const onMouseEnter = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    void fetchIfNeeded();
+    timeoutRef.current = setTimeout(() => setVisible(true), 120);
+  };
+  const onMouseLeave = () => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    timeoutRef.current = setTimeout(() => setVisible(false), 150);
+  };
+
+  const giftCount = gifts?.length ?? 0;
+
+  // Don't render badge at all until loaded — avoids showing badge on products with 0 gifts
+  if (!loading && giftCount === 0) return null;
+
+  return (
+    <div ref={containerRef} className="relative inline-block"
+      onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+      <span className={cn(
+        "inline-flex cursor-default items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        loading
+          ? "bg-gray-100 text-gray-300 dark:bg-gray-800"
+          : "bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400",
+      )}>
+        <Gift size={11} strokeWidth={2.5} />
+        {loading ? "…" : giftCount}
+      </span>
+
+      {/* Tooltip popover */}
+      {visible && gifts !== null && (
+        <div className="absolute left-0 top-full z-[200] mt-2 w-72 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+          onMouseEnter={onMouseEnter} onMouseLeave={onMouseLeave}>
+          <div className="border-b border-gray-100 px-4 py-2.5 dark:border-gray-800">
+            <p className="text-theme-xs font-semibold text-gray-700 dark:text-white">
+              🎁 Quà tặng kèm ({giftCount})
+            </p>
+          </div>
+          {giftCount === 0 ? (
+            <p className="px-4 py-3 text-theme-xs text-gray-400">Chưa có quà tặng nào</p>
+          ) : (
+            <div className="divide-y divide-gray-50 dark:divide-gray-800">
+              {gifts.map((g) => (
+                <div key={g.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-gray-100 dark:bg-gray-800">
+                    <img
+                      src={g.giftImageUrl ? getImageUrl(g.giftImageUrl) : IMAGE_PLACEHOLDER}
+                      onError={(e) => { (e.target as HTMLImageElement).src = IMAGE_PLACEHOLDER; }}
+                      alt={g.giftProductName}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-theme-xs font-semibold text-gray-800 dark:text-white">
+                      {g.giftProductName}
+                    </p>
+                    <div className="mt-0.5 flex items-center gap-1.5 text-[11px]">
+                      <span className="text-gray-400">×{g.quantity}</span>
+                      {g.giftPrice === 0 ? (
+                        <span className="font-semibold text-success-500">Miễn phí</span>
+                      ) : (
+                        <span className="text-gray-400">{formatVND(g.giftPrice)}</span>
+                      )}
+                      {g.note && <span className="italic text-gray-400 truncate">— {g.note}</span>}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const PAGE_SIZES = [10, 20, 50] as const;
 
@@ -363,14 +459,19 @@ export default function ProductsListPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Link
-                        to={`/admin/products/${p.id}`}
-                        className="text-theme-sm font-semibold text-gray-900 hover:text-brand-500 dark:text-white"
-                      >
-                        {p.name}
-                      </Link>
-                      <div className="mt-0.5 truncate text-theme-xs text-gray-400">
-                        {p.slug}
+                      <div className="flex items-start gap-2">
+                        <div className="min-w-0">
+                          <Link
+                            to={`/admin/products/${p.id}`}
+                            className="text-theme-sm font-semibold text-gray-900 hover:text-brand-500 dark:text-white"
+                          >
+                            {p.name}
+                          </Link>
+                          <div className="mt-0.5 truncate text-theme-xs text-gray-400">
+                            {p.slug}
+                          </div>
+                        </div>
+                        <GiftBadge productId={p.id} />
                       </div>
                     </TableCell>
                     <TableCell>{p.brandName ?? p.brand?.name ?? "—"}</TableCell>

@@ -3,6 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import { productApi } from "@/api/product.api";
 import { productGiftApi, type ProductGiftDto } from "@/api/productGift.api";
 import { useToast } from "@/context/ToastContext";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import type { Product } from "@/api/types";
 import { formatVND } from "@/utils/format";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
@@ -19,6 +20,7 @@ export default function ProductGiftsManager() {
   const { id } = useParams<{ id: string }>();
   const productId = Number(id);
   const toast = useToast();
+  const confirm = useConfirm();
 
   const [product, setProduct] = useState<Product | null>(null);
   const [gifts, setGifts]     = useState<ProductGiftDto[]>([]);
@@ -91,7 +93,7 @@ export default function ProductGiftsManager() {
   };
 
   const onRemove = async (giftId: number) => {
-    if (!confirm("Xóa quà tặng này?")) return;
+    if (!await confirm({ title: "Xóa quà tặng này?", message: "Quà tặng sẽ bị gỡ khỏi sản phẩm.", variant: "danger", confirmLabel: "Xoá", cancelLabel: "Huỷ" })) return;
     try {
       await productGiftApi.delete(giftId);
       toast.success("Đã xóa");

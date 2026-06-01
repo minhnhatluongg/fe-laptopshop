@@ -3,6 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/context/ToastContext";
+import { ConfirmProvider } from "@/components/ui/ConfirmModal";
 import { PublicLayout } from "@/layout/PublicLayout";
 import { AdminLayout } from "@/layout/AdminLayout";
 import { AccountLayout, ProfileTab } from "@/pages/public/account/AccountPage";
@@ -28,6 +29,7 @@ const AdminUsersPage      = lazy(() => import("@/pages/admin/users/UsersPage"));
 const AdminWalletCodes    = lazy(() => import("@/pages/admin/wallet/WalletCodesPage"));
 const AdminLoyaltyTiers   = lazy(() => import("@/pages/admin/loyalty/LoyaltyTiersPage"));
 const AdminShowroomsPage  = lazy(() => import("@/pages/admin/showrooms/ShowroomsPage"));
+const AdminGiftsPage      = lazy(() => import("@/pages/admin/gifts/GiftsPage"));
 const ProductsPage        = lazy(() => import("@/pages/public/ProductsPage"));
 const ProductDetailPage   = lazy(() => import("@/pages/public/ProductDetailPage"));
 const BrandsPage          = lazy(() => import("@/pages/public/BrandsPage"));
@@ -48,6 +50,7 @@ export default function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
+      <ConfirmProvider>
       <AuthProvider>
         <Suspense fallback={<Loading />}>
           <Routes>
@@ -99,6 +102,7 @@ export default function App() {
               <Route path="wallet-codes" element={<AdminWalletCodes />} />
               <Route path="loyalty"      element={<AdminLoyaltyTiers />} />
               <Route path="roles"        element={<AdminPlaceholder title="Phân quyền" />} />
+              <Route path="gifts"        element={<AdminGiftsPage />} />
               <Route path="banners"      element={<AdminBannersPage />} />
               <Route path="showrooms"    element={<AdminShowroomsPage />} />
             </Route>
@@ -107,6 +111,7 @@ export default function App() {
           </Routes>
         </Suspense>
       </AuthProvider>
+      </ConfirmProvider>
       </ToastProvider>
     </ThemeProvider>
   );
