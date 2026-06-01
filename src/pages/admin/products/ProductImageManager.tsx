@@ -4,6 +4,7 @@ import { productImageApi } from "@/api/productImage.api";
 import type { ProductImage } from "@/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
 import { cn } from "@/utils/cn";
 
@@ -14,6 +15,7 @@ const ACCEPT    = "image/jpeg,image/png,image/webp,image/gif";
 const MAX_BYTES = 10 * 1024 * 1024;
 
 export function ProductImageManager({ productId, className }: Props) {
+  const confirm = useConfirm();
   const [images, setImages]   = useState<ProductImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploads, setUploads] = useState<UploadItem[]>([]);
@@ -76,7 +78,7 @@ export function ProductImageManager({ productId, className }: Props) {
   };
 
   const handleDelete = async (img: ProductImage) => {
-    if (!confirm(`Xoá ảnh?`)) return;
+    if (!await confirm({ title: "Xoá ảnh này?", message: "Ảnh sẽ bị xoá vĩnh viễn.", variant: "danger", confirmLabel: "Xoá ảnh", cancelLabel: "Huỷ" })) return;
     try { await productImageApi.delete(img.id); await load(); }
     catch (e) { alert(e instanceof Error ? e.message : "Lỗi"); }
   };

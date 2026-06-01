@@ -28,14 +28,22 @@ export const walletApi = {
   setLock: (userId: number, body: { isLocked: boolean; reason?: string }) =>
     unwrap(apiClient.put<ApiResponse<WalletDto>>(`${BASE}/user/${userId}/lock`, body)),
 
-  // Redeem codes (admin generate + list)
+  // Redeem codes (admin generate + list + delete)
   generateCodes: (body: { amount: number; count: number; note?: string; expireInDays?: number }) =>
     unwrap(apiClient.post<ApiResponse<WalletRedeemCodeDto[]>>(`${BASE}/codes/generate`, body)),
 
-  listCodes: (pageNumber = 1, pageSize = 50) =>
-    unwrap(apiClient.get<ApiResponse<WalletRedeemCodeDto[]>>(`${BASE}/codes`, {
-      params: { pageNumber, pageSize },
-    })),
+  listCodes: (params: {
+    pageNumber?: number; pageSize?: number;
+    status?: string; minAmount?: number; maxAmount?: number;
+    from?: string; to?: string;
+  } = {}) =>
+    unwrap(apiClient.get<ApiResponse<WalletRedeemCodeDto[]>>(`${BASE}/codes`, { params })),
+
+  deleteCode: (id: number) =>
+    unwrap(apiClient.delete<ApiResponse<object>>(`${BASE}/codes/${id}`)),
+
+  bulkDeleteCodes: (ids: number[]) =>
+    unwrap(apiClient.delete<ApiResponse<{ deleted: number }>>(`${BASE}/codes/bulk`, { data: { ids } })),
 
   // User redeem
   redeemCode: (code: string) =>

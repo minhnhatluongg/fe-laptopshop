@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import { authApi } from "@/api/auth.api";
 import { fileApi } from "@/api/file.api";
 import { userAddressApi } from "@/api/userAddress.api";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
 import type { UserAddress, UserProfile } from "@/api/types";
 
@@ -58,6 +59,7 @@ export function AccountLayout() {
 // ─── Profile tab ─────────────────────────────────────────────────────────────
 export function ProfileTab() {
   const { refresh, user } = useAuth();
+  const confirm = useConfirm();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -128,7 +130,7 @@ export function ProfileTab() {
 
   const handleDeleteAvatar = async () => {
     if (!profile?.avatarUrl) return;
-    if (!confirm("Xoá ảnh đại diện?")) return;
+    if (!await confirm({ title: "Xoá ảnh đại diện?", message: "Ảnh đại diện sẽ bị xoá.", variant: "danger", confirmLabel: "Xoá ảnh", cancelLabel: "Huỷ" })) return;
     try {
       await authApi.deleteAvatar();
       setProfile((prev) => prev ? { ...prev, avatarUrl: null } : prev);

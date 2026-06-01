@@ -411,7 +411,10 @@ export default function ProductFormPage() {
             title="Biến thể & SKU"
             subtitle="Tự động sinh tổ hợp biến thể từ RAM × SSD × Màu sắc. Mỗi tổ hợp = 1 SKU riêng."
           />
-          <VariantManager productId={productId!} />
+          <VariantManager
+            productId={productId!}
+            brandName={brands.find((b) => b.id === Number(form.brandId))?.name}
+          />
         </Card>
       )}
 

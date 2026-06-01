@@ -367,17 +367,17 @@ export default function CartPage() {
               <div className="mt-4 space-y-2">
                 {step === "cart" ? (
                   <button type="button" onClick={() => setStep("checkout")}
-                    className="flex h-12 w-full items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white hover:bg-brand-600 transition-colors">
+                    className="btn-press flex h-12 w-full items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white shadow-sm transition-all hover:bg-brand-600 hover:shadow-brand-500/30 hover:shadow-md active:bg-brand-700 active:shadow-none select-none">
                     Tiến hành thanh toán →
                   </button>
                 ) : (
                   <>
                     <button type="button" onClick={() => void placeOrder()} disabled={placing}
-                      className="flex h-12 w-full items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white hover:bg-brand-600 disabled:opacity-60 transition-colors">
+                      className="btn-press flex h-12 w-full items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white shadow-sm transition-all hover:bg-brand-600 hover:shadow-brand-500/30 hover:shadow-md active:bg-brand-700 active:shadow-none disabled:opacity-60 disabled:shadow-none select-none">
                       {placing ? "Đang đặt hàng..." : "Xác nhận đặt hàng"}
                     </button>
                     <button type="button" onClick={() => setStep("cart")}
-                      className="flex h-10 w-full items-center justify-center rounded-xl border border-gray-200 text-theme-sm text-gray-600 hover:bg-gray-50 dark:border-gray-700">
+                      className="btn-press flex h-10 w-full items-center justify-center rounded-xl border border-gray-200 text-theme-sm text-gray-600 transition-all hover:bg-gray-50 active:bg-gray-100 dark:border-gray-700 select-none">
                       ← Quay lại giỏ hàng
                     </button>
                   </>

@@ -83,6 +83,12 @@ const navGroups: NavGroup[] = [
         to: "/admin/orders",
         icon: <Icon d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4zM3 6h18M16 10a4 4 0 1 1-8 0" />,
       },
+      {
+        key: "gifts",
+        label: "Quà tặng",
+        to: "/admin/gifts",
+        icon: <Icon d="M20 12v10H4V12M2 7h20v5H2zM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z" />,
+      },
     ],
   },
   {
@@ -99,6 +105,23 @@ const navGroups: NavGroup[] = [
         label: "Phân quyền",
         to: "/admin/roles",
         icon: <Icon d="M12 1l9 4v6c0 5.55-3.84 10.74-9 12-5.16-1.26-9-6.45-9-12V5l9-4z" />,
+      },
+    ],
+  },
+  {
+    title: "Marketing & Tài chính",
+    items: [
+      {
+        key: "wallet-codes",
+        label: "Mã quà tặng",
+        to: "/admin/wallet-codes",
+        icon: <Icon d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v2zM12 7v10M8 11h8" />,
+      },
+      {
+        key: "loyalty",
+        label: "Hạng thành viên",
+        to: "/admin/loyalty",
+        icon: <Icon d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />,
       },
     ],
   },

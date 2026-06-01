@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { userAddressApi } from "@/api/userAddress.api";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { cn } from "@/utils/cn";
 import type { UserAddress } from "@/api/types";
 
@@ -127,6 +128,7 @@ function AddressCard({
 export default function AddressTab() {
   const { user } = useAuth();
   const toast    = useToast();
+  const confirm  = useConfirm();
 
   const [addresses, setAddresses] = useState<UserAddress[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -266,7 +268,7 @@ export default function AddressTab() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm("Xoá địa chỉ này?")) return;
+    if (!await confirm({ title: "Xoá địa chỉ?", message: "Địa chỉ này sẽ bị xoá khỏi danh sách của bạn.", variant: "danger", confirmLabel: "Xoá địa chỉ", cancelLabel: "Huỷ" })) return;
     try {
       await userAddressApi.softDelete(id);
       toast.success("Đã xoá địa chỉ");

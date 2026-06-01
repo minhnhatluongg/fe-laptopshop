@@ -192,6 +192,54 @@
   font-family: var(--font-be-vietnam);
 }
 
+/* ── Global interactive feel ──────────────────────────────────────────────
+   Áp dụng cho tất cả button/anchor — không override nếu đã có active: class.
+   ─────────────────────────────────────────────────────────────────────── */
+@layer base {
+  /* Tất cả button đều cursor:pointer, no text-select, smooth transition */
+  button:not([disabled]),
+  [role="button"]:not([disabled]) {
+    cursor: pointer;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Link trong admin/public: smooth underline + color transition */
+  a {
+    transition: color 120ms ease, opacity 120ms ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Focus-visible ring — keyboard a11y */
+  :focus-visible {
+    outline: 2px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+}
+
+/* ── Reusable press utility — thêm vào inline button dùng className ──────
+   Usage: className="btn-press ..."
+   ─────────────────────────────────────────────────────────────────────── */
+@utility btn-press {
+  transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
+  &:active:not([disabled]) {
+    transform: scale(0.965);
+  }
+}
+
+/* ── Hover lift cho cards / panels ────────────────────────────────────── */
+@utility hover-lift {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px -4px rgba(0,0,0,.12);
+  }
+  &:active {
+    transform: translateY(0);
+    box-shadow: none;
+  }
+}
+
 @utility no-scrollbar {
   scrollbar-width: none;
   &::-webkit-scrollbar {

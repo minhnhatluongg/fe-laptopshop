@@ -17,11 +17,53 @@ import type {
   UserSummary,
 } from "@/api/types";
 
+// ── RBAC permission map ────────────────────────────────────────────────────
+// Define which features each role can access.
+// Add new roles here without changing UI components.
+export type Permission =
+  | "dashboard"
+  | "products.manage"
+  | "products.view"
+  | "orders.manage"
+  | "orders.view"
+  | "users.manage"
+  | "inventory.manage"
+  | "inventory.view"
+  | "gifts.manage"
+  | "coupons.manage"
+  | "wallet.manage"
+  | "wallet.view_own"
+  | "reports.view"
+  | "banners.manage"
+  | "showrooms.manage"
+  | "roles.manage";
+
+const ROLE_PERMISSIONS: Record<string, Permission[]> = {
+  SUPER_ADMIN: ["dashboard","products.manage","products.view","orders.manage","orders.view",
+    "users.manage","inventory.manage","inventory.view","gifts.manage","coupons.manage",
+    "wallet.manage","wallet.view_own","reports.view","banners.manage","showrooms.manage","roles.manage"],
+  ADMIN: ["dashboard","products.manage","products.view","orders.manage","orders.view",
+    "users.manage","inventory.manage","inventory.view","gifts.manage","coupons.manage",
+    "wallet.manage","wallet.view_own","reports.view","banners.manage","showrooms.manage"],
+  MANAGER: ["dashboard","products.manage","products.view","orders.manage","orders.view",
+    "users.manage","inventory.manage","inventory.view","gifts.manage","coupons.manage",
+    "wallet.manage","reports.view","banners.manage","showrooms.manage"],
+  SALES: ["dashboard","products.view","orders.manage","orders.view","gifts.manage",
+    "coupons.manage","wallet.view_own","reports.view"],
+  WAREHOUSE: ["dashboard","products.view","inventory.manage","inventory.view","orders.view"],
+  SUPPORT: ["dashboard","orders.view","users.manage","wallet.view_own"],
+  MODERATOR: ["dashboard","products.view","banners.manage"],
+  VIP: ["wallet.view_own"],
+  PARTNER: ["dashboard","products.view","orders.view","reports.view"],
+  CUSTOMER: ["wallet.view_own"],
+};
+
 interface AuthCtx {
   user: UserSummary | null;
   isAuthenticated: boolean;
   isAdmin: boolean;
   loading: boolean;
+  hasPermission: (p: Permission) => boolean;
   login: (body: LoginRequest) => Promise<UserSummary>;
   register: (body: RegisterRequest) => Promise<UserSummary>;
   logout: () => Promise<void>;
@@ -30,7 +72,7 @@ interface AuthCtx {
 
 const AuthContext = createContext<AuthCtx | undefined>(undefined);
 
-const ADMIN_ROLES = ["Admin", "Manager"]; // upper-cased role names
+const ADMIN_ROLES = ["Admin", "Manager", "Super Admin", "SUPER_ADMIN", "ADMIN", "MANAGER"];
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<UserSummary | null>(null);
@@ -126,18 +168,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(me);
   }, []);
 
+  const hasPermission = useCallback((p: Permission): boolean => {
+    if (!user) return false;
+    const roleCode = (user.role ?? "CUSTOMER").toUpperCase().replace(/\s+/g, "_");
+    const perms = ROLE_PERMISSIONS[roleCode] ?? ROLE_PERMISSIONS.CUSTOMER;
+    return perms.includes(p);
+  }, [user]);
+
   const value = useMemo<AuthCtx>(
     () => ({
       user,
       isAuthenticated: !!user,
-      isAdmin: !!user && ADMIN_ROLES.includes(user.role),
+      isAdmin: !!user && ADMIN_ROLES.some(r => r.toUpperCase() === (user.role ?? "").toUpperCase()),
       loading,
+      hasPermission,
       login,
       register,
       logout,
       refresh,
     }),
-    [user, loading, login, register, logout, refresh],
+    [user, loading, hasPermission, login, register, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

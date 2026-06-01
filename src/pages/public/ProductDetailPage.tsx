@@ -14,6 +14,7 @@ import type {
 } from "@/api/types";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
+import { useConfirm } from "@/components/ui/ConfirmModal";
 import { Badge } from "@/components/ui/Badge";
 import { formatVND, formatDateTime } from "@/utils/format";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
@@ -37,6 +38,7 @@ export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
   const { user, isAuthenticated } = useAuth();
   const toast = useToast();
+  const confirm = useConfirm();
 
   // Param có thể là slug ("apple-macbook-pro-...") hoặc id ("1") — hỗ trợ cả hai.
   const isNumericId = !!slug && /^\d+$/.test(slug);
@@ -229,7 +231,8 @@ export default function ProductDetailPage() {
   };
 
   const handleDeleteComment = async (id: number) => {
-    if (!productId || !confirm("Xóa bình luận này?")) return;
+    if (!productId) return;
+    if (!await confirm({ title: "Xóa bình luận này?", message: "Bình luận sẽ bị xoá vĩnh viễn.", variant: "danger", confirmLabel: "Xoá", cancelLabel: "Huỷ" })) return;
     try {
       await productDetailApi.deleteComment(id);
       setComments(await productDetailApi.getComments(productId));
@@ -239,7 +242,8 @@ export default function ProductDetailPage() {
   };
 
   const handleDeleteReview = async (id: number) => {
-    if (!productId || !confirm("Xóa đánh giá này?")) return;
+    if (!productId) return;
+    if (!await confirm({ title: "Xóa đánh giá này?", message: "Đánh giá sẽ bị xoá vĩnh viễn.", variant: "danger", confirmLabel: "Xoá", cancelLabel: "Huỷ" })) return;
     try {
       await productDetailApi.deleteReview(id);
       const [detail, rvs] = await Promise.all([
@@ -433,7 +437,7 @@ export default function ProductDetailPage() {
                 <button ref={addBtnRef} type="button"
                   onClick={() => void handleAddToCart()}
                   disabled={addingToCart}
-                  className="flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border-2 border-brand-500 text-base font-semibold text-brand-600 transition hover:bg-brand-50 disabled:opacity-60 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10">
+                  className="btn-press flex h-12 flex-1 items-center justify-center gap-2 rounded-xl border-2 border-brand-500 text-base font-semibold text-brand-600 transition-all hover:bg-brand-50 active:bg-brand-100 disabled:opacity-60 dark:border-brand-400 dark:text-brand-400 dark:hover:bg-brand-500/10 dark:active:bg-brand-500/20 select-none">
                   {addingToCart ? (
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-brand-300 border-t-brand-500" />
                   ) : (
@@ -445,7 +449,7 @@ export default function ProductDetailPage() {
                   Thêm vào giỏ
                 </button>
                 <Link to="/cart"
-                  className="flex h-12 flex-1 items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white transition hover:bg-brand-600"
+                  className="btn-press flex h-12 flex-1 items-center justify-center rounded-xl bg-brand-500 text-base font-semibold text-white shadow-sm transition-all hover:bg-brand-600 hover:shadow-brand-500/30 hover:shadow-md active:bg-brand-700 active:shadow-none select-none"
                   onClick={() => void handleAddToCart()}>
                   Mua ngay
                 </Link>
@@ -607,7 +611,7 @@ export default function ProductDetailPage() {
                   )}
                   {canDelete(r.userId) && (
                     <button
-                      onClick={() => handleDeleteReview(r.id)}
+                      onClick={() => void handleDeleteReview(r.id)}
                       className="mt-1 text-theme-xs text-error-500 hover:underline"
                     >
                       Xóa
@@ -686,7 +690,7 @@ export default function ProductDetailPage() {
                   </p>
                   {canDelete(c.userId) && (
                     <button
-                      onClick={() => handleDeleteComment(c.id)}
+                      onClick={() => void handleDeleteComment(c.id)}
                       className="mt-1 text-theme-xs text-error-500 hover:underline"
                     >
                       Xóa

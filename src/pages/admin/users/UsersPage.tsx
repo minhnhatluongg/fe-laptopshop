@@ -1,8 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { userApi } from "@/api/user.api";
+import { roleApi } from "@/api/role.api";
 import { walletApi } from "@/api/wallet.api";
 import { useToast } from "@/context/ToastContext";
-import type { User, WalletDto } from "@/api/types";
+import { cn } from "@/utils/cn";
+import type { Role, User, WalletDto } from "@/api/types";
 
 /* ──────────────────────────────────────────────────────────────────────────
  * Admin / Users — quản lý người dùng + thao tác ví
@@ -18,9 +20,147 @@ import type { User, WalletDto } from "@/api/types";
  *  - Nạp trực tiếp: dùng cho support / khuyến mãi đặc biệt.
  *  - Generate Redeem Code: dùng cho campaign hàng loạt (xem trang Wallet Codes).
  * ────────────────────────────────────────────────────────────────────────── */
+// ── Role config — dot color + badge style dùng inline style để tránh Tailwind purge ──
+interface RoleCfg { dot: string; badge: string; badgeDark: string; }
+const ROLE_CFG: Record<string, RoleCfg> = {
+  SUPER_ADMIN: { dot: "#ef4444", badge: "background:#fee2e2;color:#b91c1c",  badgeDark: "background:rgba(239,68,68,.18);color:#fca5a5" },
+  ADMIN:       { dot: "#a855f7", badge: "background:#f3e8ff;color:#7e22ce",  badgeDark: "background:rgba(168,85,247,.18);color:#d8b4fe" },
+  MANAGER:     { dot: "#3b82f6", badge: "background:#dbeafe;color:#1d4ed8",  badgeDark: "background:rgba(59,130,246,.18);color:#93c5fd" },
+  SALES:       { dot: "#06b6d4", badge: "background:#cffafe;color:#0e7490",  badgeDark: "background:rgba(6,182,212,.18);color:#67e8f9"  },
+  WAREHOUSE:   { dot: "#f97316", badge: "background:#ffedd5;color:#c2410c",  badgeDark: "background:rgba(249,115,22,.18);color:#fdba74" },
+  SUPPORT:     { dot: "#eab308", badge: "background:#fef9c3;color:#854d0e",  badgeDark: "background:rgba(234,179,8,.18);color:#fde047"  },
+  MODERATOR:   { dot: "#6366f1", badge: "background:#e0e7ff;color:#3730a3",  badgeDark: "background:rgba(99,102,241,.18);color:#a5b4fc" },
+  VIP:         { dot: "#f59e0b", badge: "background:#fef3c7;color:#92400e",  badgeDark: "background:rgba(245,158,11,.18);color:#fcd34d" },
+  PARTNER:     { dot: "#14b8a6", badge: "background:#ccfbf1;color:#115e59",  badgeDark: "background:rgba(20,184,166,.18);color:#5eead4" },
+  CUSTOMER:    { dot: "#9ca3af", badge: "background:#f3f4f6;color:#4b5563",  badgeDark: "background:rgba(156,163,175,.18);color:#9ca3af" },
+};
+function getRoleCfg(code: string): RoleCfg {
+  return ROLE_CFG[code.toUpperCase().replace(/\s+/g,"_")] ?? ROLE_CFG.CUSTOMER;
+}
+
+// ── Inline role selector ──────────────────────────────────────────────────────
+function RoleSelector({ user, roles, onChanged }: {
+  user: User; roles: Role[]; onChanged: () => void;
+}) {
+  const toast = useToast();
+  const [open, setOpen]   = useState(false);
+  const [busy, setBusy]   = useState(false);
+  const [pos, setPos]     = useState({ top: 0, left: 0 });
+  const btnRef            = useRef<HTMLButtonElement>(null);
+  const dropRef           = useRef<HTMLDivElement>(null);
+
+  // Close on outside click
+  useEffect(() => {
+    const h = (e: MouseEvent) => {
+      if (
+        !btnRef.current?.contains(e.target as Node) &&
+        !dropRef.current?.contains(e.target as Node)
+      ) setOpen(false);
+    };
+    document.addEventListener("mousedown", h);
+    return () => document.removeEventListener("mousedown", h);
+  }, []);
+
+  const openDropdown = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (open) { setOpen(false); return; }
+    const r = btnRef.current?.getBoundingClientRect();
+    if (r) setPos({ top: r.bottom + 6, left: r.left });
+    setOpen(true);
+  };
+
+  const changeRole = async (role: Role, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (role.id === user.roleId) { setOpen(false); return; }
+    setBusy(true);
+    setOpen(false);
+    try {
+      await userApi.update(user.id, { roleId: role.id });
+      toast.success(`Đã đổi → ${role.name}`, user.email);
+      onChanged();
+    } catch (err) {
+      toast.error("Đổi role thất bại", (err as Error).message);
+    } finally { setBusy(false); }
+  };
+
+  const code = (user.role?.code ?? user.roleName ?? "CUSTOMER").toUpperCase().replace(/\s+/g,"_");
+  const cfg  = getRoleCfg(code);
+
+  return (
+    <>
+      {/* Badge button */}
+      <button
+        ref={btnRef}
+        type="button"
+        disabled={busy}
+        onClick={openDropdown}
+        className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-theme-xs font-semibold cursor-pointer hover:opacity-75 transition-opacity"
+        style={{ background: cfg.badge.split(";")[0].replace("background:","").trim(),
+                 color: cfg.badge.split(";")[1].replace("color:","").trim() }}
+      >
+        <span className="h-2 w-2 rounded-full" style={{ background: cfg.dot }} />
+        {user.roleName ?? `Role#${user.roleId}`}
+        {busy
+          ? <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+          : <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="6 9 12 15 18 9"/>
+            </svg>
+        }
+      </button>
+
+      {/* Dropdown — fixed to escape overflow:hidden */}
+      {open && (
+        <div
+          ref={dropRef}
+          style={{ position: "fixed", top: pos.top, left: pos.left, zIndex: 9999 }}
+          className="w-48 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-900"
+          onClick={e => e.stopPropagation()}
+        >
+          <div className="border-b border-gray-100 px-3 py-2 dark:border-gray-800">
+            <p className="text-theme-xs font-semibold text-gray-500">Chọn vai trò</p>
+          </div>
+          <div className="max-h-64 overflow-y-auto">
+            {roles.map(r => {
+              const rc  = (r.code ?? r.name ?? "").toUpperCase().replace(/\s+/g,"_");
+              const rcfg = getRoleCfg(rc);
+              const isCurrent = r.id === user.roleId;
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={e => void changeRole(r, e)}
+                  className={cn(
+                    "flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors",
+                    isCurrent ? "bg-gray-50 dark:bg-white/5" : "hover:bg-gray-50 dark:hover:bg-white/5",
+                  )}
+                >
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: rcfg.dot }} />
+                  <span className="flex-1 text-theme-xs font-medium text-gray-700 dark:text-gray-300">
+                    {r.name}
+                  </span>
+                  {isCurrent && (
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-brand-500 shrink-0">
+                      <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdminUsersPage() {
   const toast = useToast();
   const [users, setUsers]     = useState<User[]>([]);
+  const [roles, setRoles]     = useState<Role[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch]   = useState("");
   const [selected, setSelected] = useState<User | null>(null);
@@ -28,8 +168,12 @@ export default function AdminUsersPage() {
   const reload = async () => {
     setLoading(true);
     try {
-      const list = await userApi.getAll();
-      setUsers(list);
+      const [list, roleList] = await Promise.allSettled([
+        userApi.getAll(),
+        roleApi.getAll(),
+      ]);
+      if (list.status === "fulfilled") setUsers(list.value);
+      if (roleList.status === "fulfilled") setRoles(roleList.value);
     } catch (e) {
       toast.error("Không tải được danh sách", (e as Error).message);
     } finally {
@@ -97,9 +241,7 @@ export default function AdminUsersPage() {
                 <td className="px-4 py-3">{u.email}</td>
                 <td className="px-4 py-3 text-gray-500">{u.phone ?? "—"}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded bg-gray-100 px-2 py-0.5 text-theme-xs dark:bg-gray-800">
-                    {u.roleName ?? `Role#${u.roleId}`}
-                  </span>
+                  <RoleSelector user={u} roles={roles} onChanged={reload} />
                 </td>
                 <td className="px-4 py-3">
                   {u.isActive ? (
