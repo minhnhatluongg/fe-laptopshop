@@ -5,6 +5,7 @@ import type {
   LoginRequest,
   RefreshTokenRequest,
   RegisterRequest,
+  RegisterResponse,
   UserProfile,
   UserSummary,
 } from "./types";
@@ -16,7 +17,16 @@ export const authApi = {
     unwrap(apiClient.post<ApiResponse<AuthResponse>>(`${BASE}/login`, body)),
 
   register: (body: RegisterRequest) =>
-    unwrap(apiClient.post<ApiResponse<AuthResponse>>(`${BASE}/register`, body)),
+    unwrap(apiClient.post<ApiResponse<RegisterResponse>>(`${BASE}/register`, body)),
+
+  checkEmail: (email: string) =>
+    unwrap(apiClient.get<ApiResponse<{ available: boolean }>>(`${BASE}/check-email`, { params: { email } })),
+
+  verifyEmail: (token: string) =>
+    unwrap(apiClient.get<ApiResponse<AuthResponse>>(`${BASE}/verify-email`, { params: { token } })),
+
+  resendVerification: (email: string) =>
+    unwrap(apiClient.post<ApiResponse<void>>(`${BASE}/resend-verification`, { email })),
 
   refreshToken: (body: RefreshTokenRequest = {}) =>
     unwrap(apiClient.post<ApiResponse<AuthResponse>>(`${BASE}/refresh-token`, body)),

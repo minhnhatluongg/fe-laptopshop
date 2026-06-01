@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, Navigate, NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { authApi } from "@/api/auth.api";
 import { fileApi } from "@/api/file.api";
+import { userAddressApi } from "@/api/userAddress.api";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
-import type { UserProfile } from "@/api/types";
+import type { UserAddress, UserProfile } from "@/api/types";
 
 // ─── Layout wrapper ──────────────────────────────────────────────────────────
 export function AccountLayout() {
@@ -13,10 +14,11 @@ export function AccountLayout() {
   if (!isAuthenticated) return <Navigate to="/auth/login" state={{ from: "/account" }} replace />;
 
   const navItems = [
-    { to: "/account",          label: "Thông tin cá nhân", end: true },
-    { to: "/account/password", label: "Đổi mật khẩu" },
-    { to: "/account/wallet",   label: "Ví của tôi" },
-    { to: "/account/orders",   label: "Đơn hàng" },
+    { to: "/account",           label: "Thông tin cá nhân", end: true },
+    { to: "/account/addresses", label: "Địa chỉ giao hàng" },
+    { to: "/account/password",  label: "Đổi mật khẩu" },
+    { to: "/account/wallet",    label: "Ví của tôi" },
+    { to: "/account/orders",    label: "Đơn hàng" },
   ];
 
   return (
@@ -55,12 +57,15 @@ export function AccountLayout() {
 
 // ─── Profile tab ─────────────────────────────────────────────────────────────
 export function ProfileTab() {
-  const { refresh } = useAuth();
+  const { refresh, user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  // default shipping address
+  const [defaultAddr, setDefaultAddr] = useState<UserAddress | null>(null);
 
   // avatar upload state
   const [avatarUploading, setAvatarUploading] = useState(false);
@@ -73,6 +78,13 @@ export function ProfileTab() {
       .catch(() => setError("Không tải được thông tin"))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    userAddressApi.getDefaultByUser(user.id)
+      .then(setDefaultAddr)
+      .catch(() => setDefaultAddr(null));
+  }, [user?.id]);
 
   const handleSave = async () => {
     if (!profile) return;
@@ -255,6 +267,65 @@ export function ProfileTab() {
             {saving ? "Đang lưu..." : "Lưu thay đổi"}
           </button>
         </div>
+      </div>
+
+      {/* Shipping address card */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Địa chỉ giao hàng</h2>
+          <Link
+            to="/account/addresses"
+            className="inline-flex items-center gap-1.5 text-theme-sm font-medium text-brand-500 hover:text-brand-600"
+          >
+            Quản lý
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 18 15 12 9 6"/>
+            </svg>
+          </Link>
+        </div>
+
+        {defaultAddr ? (
+          <div className="flex items-start gap-3 rounded-xl border border-brand-100 bg-brand-50/60 p-4 dark:border-brand-500/20 dark:bg-brand-500/[0.06]">
+            <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 dark:bg-brand-500/20">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-brand-500">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+              </svg>
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                <p className="text-theme-sm font-semibold text-gray-900 dark:text-white">
+                  {defaultAddr.recipientName}
+                </p>
+                <span className="rounded-full bg-brand-500 px-2 py-0.5 text-[10px] font-semibold text-white">Mặc định</span>
+              </div>
+              <p className="mt-0.5 text-theme-sm text-gray-500">{defaultAddr.phone}</p>
+              <p className="mt-1 text-theme-sm text-gray-600 dark:text-gray-400">
+                {[defaultAddr.addressLine, defaultAddr.ward, defaultAddr.district, defaultAddr.city]
+                  .filter(Boolean).join(", ")}
+              </p>
+            </div>
+            <Link to="/account/addresses" className="shrink-0 text-theme-xs text-brand-500 hover:text-brand-600 font-medium">
+              Sửa
+            </Link>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between rounded-xl border border-dashed border-gray-200 p-4 dark:border-gray-700">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-gray-400">
+                  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
+                </svg>
+              </div>
+              <p className="text-theme-sm text-gray-500">Chưa có địa chỉ giao hàng nào</p>
+            </div>
+            <Link
+              to="/account/addresses"
+              className="inline-flex h-9 items-center rounded-lg bg-brand-500 px-3 text-theme-xs font-medium text-white hover:bg-brand-600"
+            >
+              + Thêm ngay
+            </Link>
+          </div>
+        )}
       </div>
     </div>
   );

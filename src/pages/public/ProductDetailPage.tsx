@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { productDetailApi } from "@/api";
 import { cartApi } from "@/api/cart.api";
+import { productGiftApi, type ProductGiftDto } from "@/api/productGift.api";
 import { variantApi, type ProductVariantDto } from "@/api/variant.api";
 import { emitCartUpdated, flyToCart } from "@/utils/cartEvents";
 import { guestCart } from "@/utils/guestCart";
@@ -103,11 +104,13 @@ export default function ProductDetailPage() {
 
   // ----- Variants -----
   const [variants, setVariants] = useState<ProductVariantDto[]>([]);
+  const [gifts, setGifts] = useState<ProductGiftDto[]>([]);
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!productId) return;
     variantApi.getByProduct(productId).then(setVariants).catch(() => {});
+    productGiftApi.getByProduct(productId).then(setGifts).catch(() => setGifts([]));
   }, [productId]);
 
   // Group attribute options from all active variants
@@ -460,6 +463,59 @@ export default function ProductDetailPage() {
           <ContextBanner ctx={context} />
         </div>
       </div>
+
+      {/* ─── 🎁 Quà tặng kèm ─────────────────────────────────────── */}
+      {gifts.length > 0 && (
+        <Section title={`🎁 Quà tặng kèm (${gifts.length})`}>
+          <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
+            {gifts.map((g) => {
+              const saving = (g.giftOriginalPrice - g.giftPrice) * g.quantity;
+              return (
+                <li key={g.id}
+                  className="flex gap-3 rounded-xl border border-error-200 bg-error-50/40 p-3 dark:border-error-500/30 dark:bg-error-500/5">
+                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white">
+                    <img src={g.giftImageUrl ? getImageUrl(g.giftImageUrl) : IMAGE_PLACEHOLDER}
+                      onError={(e) => { (e.target as HTMLImageElement).src = IMAGE_PLACEHOLDER; }}
+                      alt={g.giftProductName}
+                      className="h-full w-full object-contain" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="line-clamp-2 text-theme-sm font-semibold text-gray-900 dark:text-white">
+                      {g.giftProductName}
+                    </p>
+                    <p className="mt-1 text-theme-xs text-gray-500">
+                      SL: <strong>{g.quantity}</strong>
+                      {g.note ? <> · {g.note}</> : null}
+                    </p>
+                    <div className="mt-1 flex flex-wrap items-baseline gap-1.5">
+                      {g.giftPrice === 0 ? (
+                        <Badge color="error" variant="solid">MIỄN PHÍ</Badge>
+                      ) : (
+                        <span className="text-theme-sm font-bold text-error-500">
+                          {formatVND(g.giftPrice)}
+                        </span>
+                      )}
+                      {g.giftOriginalPrice > 0 && (
+                        <span className="text-theme-xs text-gray-400 line-through">
+                          {formatVND(g.giftOriginalPrice)}
+                        </span>
+                      )}
+                    </div>
+                    {saving > 0 && (
+                      <p className="mt-0.5 text-theme-xs text-success-600">
+                        💰 Tiết kiệm {formatVND(saving)}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="mt-3 text-theme-xs text-gray-500">
+            🎁 Quà tặng sẽ được tự động thêm vào đơn hàng khi bạn mua sản phẩm này.
+          </p>
+        </Section>
+      )}
 
       {/* ─── Thông số kỹ thuật ─────────────────────────────────────── */}
       <Section title="Thông số kỹ thuật">

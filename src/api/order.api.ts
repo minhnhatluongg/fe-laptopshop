@@ -5,7 +5,6 @@ import type {
   Order,
   OrderStatus,
   PagedResult,
-  PaginationQuery,
   UpdateOrderStatusRequest,
 } from "./types";
 
@@ -36,10 +35,10 @@ export const orderApi = {
   createGuest: (body: CreateGuestOrderRequest) =>
     unwrap(apiClient.post<ApiResponse<Order>>(`${BASE}/guest`, body)),
 
-  myOrders: (status?: OrderStatus) =>
+  myOrders: (params?: { status?: OrderStatus; page?: number; pageSize?: number }) =>
     unwrap(
-      apiClient.get<ApiResponse<Order[]>>(`${BASE}/my-orders`, {
-        params: status ? { status } : undefined,
+      apiClient.get<ApiResponse<PagedResult<Order>>>(`${BASE}/my-orders`, {
+        params: params ?? undefined,
       }),
     ),
 
@@ -53,7 +52,7 @@ export const orderApi = {
 
   // ----- Admin -----
   adminGetAll: (
-    query: PaginationQuery & { status?: OrderStatus; userId?: number } = {},
+    query: { status?: OrderStatus; search?: string; fromDate?: string; toDate?: string; page?: number; pageSize?: number } = {},
   ) =>
     unwrap(
       apiClient.get<ApiResponse<PagedResult<Order>>>(`${BASE}/admin/all`, {

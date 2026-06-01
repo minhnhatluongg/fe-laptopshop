@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { authApi } from "@/api/auth.api";
 import { useAuth } from "@/context/AuthContext";
 import { useToast } from "@/context/ToastContext";
 import { Button } from "@/components/ui/Button";
@@ -15,8 +16,11 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false);
+  const [error, setError]               = useState<string | null>(null);
+  const [submitting, setSubmitting]     = useState(false);
+  const [unverifiedEmail, setUnverifiedEmail] = useState<string | null>(null);
+  const [resending, setResending]       = useState(false);
+  const [resent, setResent]             = useState(false);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -31,8 +35,13 @@ export default function LoginPage() {
       });
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Đăng nhập thất bại";
-      setError(msg);
-      toast.error("Đăng nhập thất bại", msg);
+      if (msg === "EMAIL_NOT_VERIFIED") {
+        setUnverifiedEmail(email);
+        setError(null);
+      } else {
+        setError(msg);
+        toast.error("Đăng nhập thất bại", msg);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -112,6 +121,38 @@ export default function LoginPage() {
           {error && (
             <div className="rounded-lg bg-error-50 px-3 py-2 text-theme-sm text-error-600 dark:bg-error-500/15 dark:text-error-400">
               {error}
+            </div>
+          )}
+
+          {unverifiedEmail && (
+            <div className="rounded-xl border border-warning-200 bg-warning-50 p-4 dark:border-warning-500/30 dark:bg-warning-500/10">
+              <p className="text-theme-sm font-medium text-warning-700 dark:text-warning-300">
+                ⚠️ Email chưa được xác minh
+              </p>
+              <p className="mt-1 text-theme-xs text-warning-600 dark:text-warning-400">
+                Kiểm tra hộp thư <strong>{unverifiedEmail}</strong> và nhấn link xác minh.
+              </p>
+              {!resent ? (
+                <button
+                  type="button"
+                  disabled={resending}
+                  onClick={async () => {
+                    setResending(true);
+                    try {
+                      await authApi.resendVerification(unverifiedEmail);
+                      setResent(true);
+                      toast.success("Đã gửi lại!", "Kiểm tra hộp thư của bạn.");
+                    } catch {
+                      toast.error("Gửi thất bại");
+                    } finally { setResending(false); }
+                  }}
+                  className="mt-2 text-theme-xs font-medium text-warning-700 underline hover:text-warning-800 disabled:opacity-50 dark:text-warning-300"
+                >
+                  {resending ? "Đang gửi..." : "Gửi lại email xác minh →"}
+                </button>
+              ) : (
+                <p className="mt-2 text-theme-xs font-medium text-success-600">✓ Đã gửi lại email xác minh.</p>
+              )}
             </div>
           )}
 

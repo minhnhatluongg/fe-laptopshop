@@ -12,6 +12,7 @@ import { Field, Input, Select, Switch, Textarea } from "@/components/ui/Input";
 import { formatVND } from "@/utils/format";
 import { ProductImageManager } from "./ProductImageManager";
 import { VariantManager } from "./VariantManager";
+import GiftsTab from "./GiftsTab";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface FormState {
@@ -58,7 +59,7 @@ export default function ProductFormPage() {
   const [savingSpec, setSavingSpec] = useState(false);
   const [error, setError]           = useState<string | null>(null);
   const [slugTouched, setSlugTouched] = useState(false);
-  const [activeTab, setActiveTab]   = useState<"info" | "spec" | "images" | "variants">("info");
+  const [activeTab, setActiveTab]   = useState<"info" | "spec" | "images" | "variants" | "gifts">("info");
 
   const setF = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm((s) => ({ ...s, [k]: v }));
@@ -236,6 +237,7 @@ export default function ProductFormPage() {
           { key: "spec",     label: "Thông số kỹ thuật" },
           { key: "images",   label: "Hình ảnh" },
           { key: "variants", label: "Biến thể & SKU" },
+          { key: "gifts",    label: "🎁 Quà tặng" },
         ].map((tab) => (
           <button
             key={tab.key}
@@ -410,6 +412,17 @@ export default function ProductFormPage() {
             subtitle="Tự động sinh tổ hợp biến thể từ RAM × SSD × Màu sắc. Mỗi tổ hợp = 1 SKU riêng."
           />
           <VariantManager productId={productId!} />
+        </Card>
+      )}
+
+      {/* ── Tab: Quà tặng ─────────────────────────────────────────────────── */}
+      {activeTab === "gifts" && !isNew && (
+        <Card>
+          <CardHeader
+            title="🎁 Quà tặng kèm sản phẩm"
+            subtitle="Click vào sản phẩm để thêm/bỏ làm quà tặng. Khi khách mua sản phẩm này, các quà tặng sẽ tự động được thêm vào đơn hàng."
+          />
+          <GiftsTab productId={productId!} />
         </Card>
       )}
     </div>

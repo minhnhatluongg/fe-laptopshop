@@ -5,6 +5,7 @@ import { productApi } from "@/api/product.api";
 import { brandApi } from "@/api/brand.api";
 import { categoryApi } from "@/api/category.api";
 import { bulkApi, type BulkJobType } from "@/api/bulk.api";
+import { productGiftApi } from "@/api/productGift.api";
 import type { Brand, Category, Product, ProductFilter } from "@/api/types";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -63,6 +64,11 @@ export default function ProductsListPage() {
   const [isActiveInput, setIsActiveInput]   = useState(false);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const [runningJobs, setRunningJobs]       = useState<Array<{ jobId: string; message: string; progress: number }>>([]);
+
+  // Gift bulk modal
+  const [giftBulkOpen, setGiftBulkOpen] = useState(false);
+  const [pickedGifts, setPickedGifts]   = useState<Set<number>>(new Set());
+  const [giftBulkBusy, setGiftBulkBusy] = useState(false);
 
   // SignalR — nhận BulkJobCompleted notification
   useInventoryHub({
@@ -243,6 +249,11 @@ export default function ProductsListPage() {
                 {action.label}
               </button>
             ))}
+            <button type="button"
+              onClick={() => { setPickedGifts(new Set()); setGiftBulkOpen(true); }}
+              className="h-8 rounded-lg bg-purple-500 px-3 text-theme-xs font-medium text-white hover:bg-purple-600">
+              🎁 Gán quà tặng
+            </button>
           </div>
           <button type="button" onClick={() => setSelected(new Set())}
             className="ml-auto text-theme-xs text-brand-500 hover:text-brand-700">
@@ -631,6 +642,137 @@ export default function ProductsListPage() {
           )}
         </div>
       </Modal>
+
+      {/* ── Bulk gán quà tặng modal ────────────────────────────────────────── */}
+      <BulkGiftsModal
+        open={giftBulkOpen}
+        onClose={() => setGiftBulkOpen(false)}
+        targetProductIds={Array.from(selected)}
+        candidateProducts={products}
+        pickedGifts={pickedGifts}
+        setPickedGifts={setPickedGifts}
+        busy={giftBulkBusy}
+        onSubmit={async () => {
+          if (pickedGifts.size === 0) {
+            toast.warning("Chọn ít nhất 1 sản phẩm làm quà");
+            return;
+          }
+          setGiftBulkBusy(true);
+          try {
+            const res = await productGiftApi.bulkAdd({
+              productIds: Array.from(selected),
+              gifts: Array.from(pickedGifts).map((id) => ({
+                giftProductId: id,
+                quantity: 1,
+                giftPrice: 0,
+              })),
+            });
+            toast.success("Đã gán quà tặng",
+              `Tạo ${res.created} · Bỏ qua ${res.skipped}` +
+              (res.errors.length ? ` · Lỗi ${res.errors.length}` : ""));
+            setGiftBulkOpen(false);
+            setSelected(new Set());
+          } catch (e) {
+            toast.error("Gán thất bại", (e as Error).message);
+          } finally {
+            setGiftBulkBusy(false);
+          }
+        }}
+      />
+    </div>
+  );
+}
+
+/* BulkGiftsModal — chọn N sản phẩm làm quà tặng cho M product đã chọn ở list */
+function BulkGiftsModal({
+  open, onClose, targetProductIds, candidateProducts,
+  pickedGifts, setPickedGifts, busy, onSubmit,
+}: {
+  open: boolean;
+  onClose: () => void;
+  targetProductIds: number[];
+  candidateProducts: Product[];
+  pickedGifts: Set<number>;
+  setPickedGifts: (s: Set<number>) => void;
+  busy: boolean;
+  onSubmit: () => Promise<void> | void;
+}) {
+  const [search, setSearch] = useState("");
+  if (!open) return null;
+
+  const targetSet = new Set(targetProductIds);
+  const filtered = candidateProducts.filter((p) =>
+    !targetSet.has(p.id) &&
+    (search.trim() === "" || p.name.toLowerCase().includes(search.toLowerCase()))
+  );
+
+  const toggle = (id: number) => {
+    const n = new Set(pickedGifts);
+    if (n.has(id)) n.delete(id); else n.add(id);
+    setPickedGifts(n);
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-3xl rounded-2xl bg-white p-5 shadow-2xl dark:bg-gray-900">
+        <div className="flex items-start justify-between">
+          <div>
+            <h3 className="text-lg font-bold">🎁 Gán quà tặng hàng loạt</h3>
+            <p className="text-theme-sm text-gray-500">
+              Gán cho <strong>{targetProductIds.length}</strong> sản phẩm đã chọn.
+              Cặp đã tồn tại sẽ tự bỏ qua.
+            </p>
+          </div>
+          <button onClick={onClose} className="text-2xl text-gray-400 hover:text-gray-700">×</button>
+        </div>
+
+        <input value={search} onChange={(e) => setSearch(e.target.value)}
+          placeholder="Tìm sản phẩm làm quà..."
+          className="mt-3 h-10 w-full rounded-lg border border-gray-200 px-3 text-theme-sm dark:border-gray-700 dark:bg-gray-800" />
+
+        <div className="mt-3 max-h-[50vh] overflow-y-auto rounded-lg border border-gray-200 dark:border-gray-700">
+          {filtered.length === 0 ? (
+            <p className="p-6 text-center text-theme-sm text-gray-400">Không có sản phẩm phù hợp</p>
+          ) : (
+            <ul>
+              {filtered.map((p) => {
+                const checked = pickedGifts.has(p.id);
+                return (
+                  <li key={p.id} onClick={() => toggle(p.id)}
+                    className={cn(
+                      "flex cursor-pointer items-center gap-3 border-b border-gray-100 p-2.5 last:border-0 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/50",
+                      checked && "bg-brand-50 dark:bg-brand-500/10",
+                    )}>
+                    <input type="checkbox" checked={checked} readOnly className="h-4 w-4" />
+                    <img src={p.mainImageUrl ? getImageUrl(p.mainImageUrl) : IMAGE_PLACEHOLDER}
+                      alt="" className="h-10 w-10 rounded object-contain bg-gray-50" />
+                    <div className="flex-1 min-w-0">
+                      <p className="line-clamp-1 text-theme-sm font-medium">{p.name}</p>
+                      <p className="text-theme-xs text-gray-500">{formatVND(p.price)}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+
+        <div className="mt-4 flex items-center justify-between">
+          <p className="text-theme-sm text-gray-500">
+            Đã chọn <strong className="text-brand-500">{pickedGifts.size}</strong> sản phẩm làm quà
+          </p>
+          <div className="flex gap-2">
+            <button onClick={onClose}
+              className="rounded-lg border border-gray-200 px-4 py-2 text-theme-sm dark:border-gray-700">
+              Huỷ
+            </button>
+            <button onClick={() => void onSubmit()} disabled={busy || pickedGifts.size === 0}
+              className="rounded-lg bg-purple-500 px-4 py-2 text-theme-sm font-semibold text-white hover:bg-purple-600 disabled:opacity-50">
+              {busy ? "Đang gán..." : `Gán ${pickedGifts.size} quà × ${targetProductIds.length} SP`}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

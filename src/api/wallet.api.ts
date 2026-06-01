@@ -27,4 +27,31 @@ export const walletApi = {
 
   setLock: (userId: number, body: { isLocked: boolean; reason?: string }) =>
     unwrap(apiClient.put<ApiResponse<WalletDto>>(`${BASE}/user/${userId}/lock`, body)),
+
+  // Redeem codes (admin generate + list)
+  generateCodes: (body: { amount: number; count: number; note?: string; expireInDays?: number }) =>
+    unwrap(apiClient.post<ApiResponse<WalletRedeemCodeDto[]>>(`${BASE}/codes/generate`, body)),
+
+  listCodes: (pageNumber = 1, pageSize = 50) =>
+    unwrap(apiClient.get<ApiResponse<WalletRedeemCodeDto[]>>(`${BASE}/codes`, {
+      params: { pageNumber, pageSize },
+    })),
+
+  // User redeem
+  redeemCode: (code: string) =>
+    unwrap(apiClient.post<ApiResponse<WalletTransactionDto>>(`${BASE}/codes/redeem`, { code })),
 };
+
+export interface WalletRedeemCodeDto {
+  id: number;
+  code: string;
+  amount: number;
+  note?: string | null;
+  createdAt: string;
+  expiresAt?: string | null;
+  usedByUserId?: number | null;
+  usedByUserName?: string | null;
+  usedAt?: string | null;
+  isUsed: boolean;
+  isExpired: boolean;
+}

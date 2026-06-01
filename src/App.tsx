@@ -10,14 +10,23 @@ import { RequireAdmin } from "@/router/guards";
 
 const HomePage            = lazy(() => import("@/pages/public/Home"));
 const LoginPage           = lazy(() => import("@/pages/auth/Login"));
+const RegisterPage        = lazy(() => import("@/pages/auth/Register"));
+const VerifyEmailPage     = lazy(() => import("@/pages/auth/VerifyEmail"));
 const NotFoundPage        = lazy(() => import("@/pages/NotFound"));
 const AdminDashboardPage  = lazy(() => import("@/pages/admin/Dashboard"));
 const AdminPlaceholder    = lazy(() => import("@/pages/admin/Placeholder"));
 const AdminProductsList   = lazy(() => import("@/pages/admin/products/ProductsList"));
 const AdminProductForm    = lazy(() => import("@/pages/admin/products/ProductForm"));
+const AdminProductGifts   = lazy(() => import("@/pages/admin/products/ProductGiftsManager"));
 const ChangePasswordTab   = lazy(() => import("@/pages/public/account/ChangePasswordTab"));
 const WalletTab           = lazy(() => import("@/pages/public/account/WalletTab"));
+const MyOrdersTab         = lazy(() => import("@/pages/public/account/MyOrdersTab"));
+const AddressTab          = lazy(() => import("@/pages/public/account/AddressTab"));
+const AdminOrdersPage     = lazy(() => import("@/pages/admin/orders/OrdersPage"));
 const AdminBannersPage    = lazy(() => import("@/pages/admin/banners/BannersPage"));
+const AdminUsersPage      = lazy(() => import("@/pages/admin/users/UsersPage"));
+const AdminWalletCodes    = lazy(() => import("@/pages/admin/wallet/WalletCodesPage"));
+const AdminLoyaltyTiers   = lazy(() => import("@/pages/admin/loyalty/LoyaltyTiersPage"));
 const AdminShowroomsPage  = lazy(() => import("@/pages/admin/showrooms/ShowroomsPage"));
 const ProductsPage        = lazy(() => import("@/pages/public/ProductsPage"));
 const ProductDetailPage   = lazy(() => import("@/pages/public/ProductDetailPage"));
@@ -58,13 +67,15 @@ export default function App() {
                 <Route index element={<ProfileTab />} />
                 <Route path="password" element={<ChangePasswordTab />} />
                 <Route path="wallet"   element={<WalletTab />} />
-                <Route path="orders"   element={<AdminPlaceholder title="Đơn hàng của tôi" />} />
+                <Route path="addresses" element={<AddressTab />} />
+                <Route path="orders"   element={<MyOrdersTab />} />
               </Route>
             </Route>
 
             {/* Auth */}
-            <Route path="/auth/login"    element={<LoginPage />} />
-            <Route path="/auth/register" element={<AdminPlaceholder title="Đăng ký" />} />
+            <Route path="/auth/login"        element={<LoginPage />} />
+            <Route path="/auth/register"     element={<RegisterPage />} />
+            <Route path="/auth/verify-email" element={<VerifyEmailPage />} />
 
             {/* Admin panel */}
             <Route
@@ -79,11 +90,14 @@ export default function App() {
               <Route path="products"     element={<AdminProductsList />} />
               <Route path="products/new" element={<AdminProductForm />} />
               <Route path="products/:id" element={<AdminProductForm />} />
+              <Route path="products/:id/gifts" element={<AdminProductGifts />} />
               <Route path="categories"   element={<AdminPlaceholder title="Quản lý danh mục" />} />
               <Route path="brands"       element={<AdminPlaceholder title="Quản lý thương hiệu" />} />
               <Route path="inventory"    element={<AdminPlaceholder title="Quản lý tồn kho" />} />
-              <Route path="orders"       element={<AdminPlaceholder title="Quản lý đơn hàng" />} />
-              <Route path="users"        element={<AdminPlaceholder title="Quản lý người dùng" />} />
+              <Route path="orders"       element={<AdminOrdersPage />} />
+              <Route path="users"        element={<AdminUsersPage />} />
+              <Route path="wallet-codes" element={<AdminWalletCodes />} />
+              <Route path="loyalty"      element={<AdminLoyaltyTiers />} />
               <Route path="roles"        element={<AdminPlaceholder title="Phân quyền" />} />
               <Route path="banners"      element={<AdminBannersPage />} />
               <Route path="showrooms"    element={<AdminShowroomsPage />} />

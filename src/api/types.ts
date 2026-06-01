@@ -62,6 +62,12 @@ export interface RegisterRequest {
   dateOfBirth?: string | null;
 }
 
+export interface RegisterResponse {
+  email: string;
+  message: string;
+  requiresEmailVerification: boolean;
+}
+
 export interface RefreshTokenRequest {
   refreshToken?: string | null;
 }
@@ -222,39 +228,88 @@ export interface ProductImage {
 }
 
 // ---------- Order ----------
+// Matches backend OrderStatus enum exactly
 export type OrderStatus =
   | "Pending"
   | "Confirmed"
   | "Processing"
-  | "Shipping"
+  | "Shipped"
   | "Delivered"
+  | "Completed"
   | "Cancelled"
-  | "Returned";
+  | "Returned"
+  | "Refunded";
+
+export interface OrderShippingAddress {
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  address: string;
+  city?: string | null;
+  district?: string | null;
+  ward?: string | null;
+  postalCode?: string | null;
+}
+
+export interface OrderItemSummary {
+  id: number;
+  productId: number;
+  productName: string;
+  productImageUrl?: string | null;
+  unitPrice: number;
+  quantity: number;
+  subTotal: number;
+}
 
 export interface OrderItem {
   id: number;
-  orderId: number;
+  orderId?: number;
   productId: number;
   productName: string;
+  productImageUrl?: string | null;
   unitPrice: number;
   quantity: number;
   subtotal: number;
+  subTotal?: number;
   product?: Product | null;
 }
 
 export interface Order {
   id: number;
-  userId: number;
+  orderNumber?: string;
+  userId?: number | null;
+  userFullName?: string | null;
+  userEmail?: string | null;
   orderDate: string;
+  createdAt?: string;
   status: OrderStatus;
+  statusDisplay?: string;
+  // Financials
+  subTotal?: number;
+  discountAmount?: number;
+  discountCode?: string | null;
+  taxAmount?: number;
+  shippingFee?: number;
   totalAmount: number;
-  shippingAddress?: string | null;
+  totalItems?: number;
+  // Methods
+  shippingMethod?: string | null;
   paymentMethod?: string | null;
+  isPaid?: boolean;
+  paidDate?: string | null;
+  // Logistics
   trackingNumber?: string | null;
   estimatedDelivery?: string | null;
+  // Address — object from detail endpoint
+  shippingAddress?: OrderShippingAddress | string | null;
+  // Status flags
   cancelReason?: string | null;
+  canCancel?: boolean;
+  canReturn?: boolean;
   notes?: string | null;
-  items: OrderItem[];
+  // Items — OrderSummaryDto uses items[], OrderDto uses orderItems[]
+  items?: OrderItemSummary[];
+  orderItems?: OrderItem[];
 }
 
 export interface CreateOrderRequest {
