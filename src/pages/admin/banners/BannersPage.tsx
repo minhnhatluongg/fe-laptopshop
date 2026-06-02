@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Field, Input, Switch, Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
+import { BannerBuilderModal, BannerRenderer, DEFAULT_CONFIG, parseBannerConfig, type BannerConfig } from "@/components/ui/BannerBuilder";
+import { BannerImagePicker } from "@/components/ui/BannerImagePicker";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
 import { formatDateTime } from "@/utils/format";
 
@@ -33,6 +35,8 @@ export default function BannersPage() {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [builderTarget, setBuilderTarget] = useState<BannerDto | null>(null);
+  const [aiLoading, setAiLoading]         = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -42,7 +46,14 @@ export default function BannersPage() {
 
   useEffect(() => { void load(); }, [load]);
 
-  const openCreate = () => { setForm(empty); setFormOpen(true); };
+  const openCreate = () => {
+    // Auto displayOrder = max + 1 (banner mới hiển thị cuối, admin chỉnh sau nếu cần)
+    const nextOrder = banners.length === 0
+      ? 0
+      : Math.max(...banners.map((b) => b.displayOrder)) + 1;
+    setForm({ ...empty, displayOrder: nextOrder });
+    setFormOpen(true);
+  };
   const openEdit = (b: BannerDto) => {
     setForm({
       id: b.id,
@@ -193,6 +204,14 @@ export default function BannersPage() {
                 <div className="flex gap-1.5">
                   <button
                     type="button"
+                    onClick={() => setBuilderTarget(b)}
+                    className="rounded-lg px-2.5 py-1.5 text-theme-xs font-medium text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-500/10"
+                    title="Thiết kế style banner"
+                  >
+                    🎨 Thiết kế
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => openEdit(b)}
                     className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-brand-500 dark:hover:bg-white/5"
                     title="Sửa"
@@ -235,59 +254,9 @@ export default function BannersPage() {
             <label className="mb-1.5 block text-theme-sm font-medium text-gray-700 dark:text-gray-300">
               Ảnh banner <span className="text-error-500">*</span>
             </label>
-            <div className="relative aspect-[16/6] overflow-hidden rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 dark:border-gray-700 dark:bg-gray-800/50">
-              {form.imageUrl ? (
-                <>
-                  <img
-                    src={getImageUrl(form.imageUrl)}
-                    onError={(e) => { (e.target as HTMLImageElement).src = IMAGE_PLACEHOLDER; }}
-                    alt="Preview"
-                    className="h-full w-full object-cover"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/0 transition hover:bg-black/30">
-                    <button
-                      type="button"
-                      onClick={() => fileRef.current?.click()}
-                      className="opacity-0 hover:opacity-100 inline-flex h-10 items-center rounded-lg bg-white px-4 text-theme-sm font-medium text-gray-700 shadow transition hover:bg-gray-50"
-                    >
-                      Đổi ảnh
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => fileRef.current?.click()}
-                  className="flex h-full w-full flex-col items-center justify-center gap-2 text-gray-400 hover:text-brand-500"
-                >
-                  <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                    <polyline points="17 8 12 3 7 8" />
-                    <line x1="12" y1="3" x2="12" y2="15" />
-                  </svg>
-                  <span className="text-theme-sm font-medium">Click để chọn ảnh</span>
-                  <span className="text-theme-xs">PNG, JPG, WEBP — tỷ lệ 16:6 hoặc 16:9 đẹp nhất</span>
-                </button>
-              )}
-
-              {uploading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/50">
-                  <div className="h-1.5 w-48 overflow-hidden rounded-full bg-white/30">
-                    <div className="h-full bg-brand-400 transition-all" style={{ width: `${uploadProgress}%` }} />
-                  </div>
-                  <p className="mt-2 text-theme-xs font-medium text-white">{uploadProgress}%</p>
-                </div>
-              )}
-            </div>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/jpeg,image/png,image/webp"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void handleUpload(f);
-              }}
+            <BannerImagePicker
+              imageUrl={form.imageUrl}
+              onChange={(url) => set("imageUrl", url)}
             />
             {/* Hoặc nhập URL trực tiếp */}
             <div className="mt-2">
@@ -298,6 +267,36 @@ export default function BannersPage() {
               />
             </div>
           </div>
+
+          {/* AI suggest — hiện khi đã có ảnh */}
+          {form.imageUrl && (
+            <button
+              type="button"
+              disabled={aiLoading}
+              onClick={async () => {
+                setAiLoading(true);
+                try {
+                  const s = await bannerApi.aiSuggest(form.imageUrl);
+                  set("title",    s.title);
+                  set("subtitle", s.subtitle);
+                } catch { /* silent */ }
+                finally { setAiLoading(false); }
+              }}
+              className="flex items-center gap-2 rounded-xl border border-purple-200 bg-purple-50 px-4 py-2.5 text-theme-sm font-medium text-purple-600 hover:bg-purple-100 disabled:opacity-50 transition-colors dark:border-purple-500/30 dark:bg-purple-500/10 dark:text-purple-400"
+            >
+              {aiLoading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Đang phân tích ảnh...
+                </>
+              ) : (
+                <>✨ AI gợi ý tiêu đề từ ảnh</>
+              )}
+            </button>
+          )}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Tiêu đề" required>
@@ -343,6 +342,19 @@ export default function BannersPage() {
           </div>
         </div>
       </Modal>
+
+      {/* Banner Builder */}
+      {builderTarget && (
+        <BannerBuilderModal
+          initial={parseBannerConfig(builderTarget.styleConfig) ?? DEFAULT_CONFIG}
+          onClose={() => setBuilderTarget(null)}
+          onSave={async (cfg: BannerConfig) => {
+            await bannerApi.update({ id: builderTarget.id, styleConfig: JSON.stringify(cfg) });
+            setBuilderTarget(null);
+            void load();
+          }}
+        />
+      )}
 
       {/* Delete confirm */}
       <Modal

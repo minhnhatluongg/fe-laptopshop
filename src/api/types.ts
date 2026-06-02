@@ -165,6 +165,7 @@ export interface Product {
   // Review summary
   averageRating?: number;
   totalReviews?: number;
+  hasGifts?: boolean;
   totalComments?: number;
 }
 
@@ -423,6 +424,7 @@ export interface User {
   dateOfBirth?: string | null;
   roleId: number;
   role?: Role | null;
+  roleName?: string | null;
   isActive: boolean;
   emailConfirmed: boolean;
   avatarUrl?: string | null;

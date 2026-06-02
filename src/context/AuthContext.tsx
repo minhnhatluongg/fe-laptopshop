@@ -13,7 +13,6 @@ import { useToast } from "@/context/ToastContext";
 import type {
   AuthResponse,
   LoginRequest,
-  RegisterRequest,
   UserSummary,
 } from "@/api/types";
 
@@ -65,7 +64,6 @@ interface AuthCtx {
   loading: boolean;
   hasPermission: (p: Permission) => boolean;
   login: (body: LoginRequest) => Promise<UserSummary>;
-  register: (body: RegisterRequest) => Promise<UserSummary>;
   logout: () => Promise<void>;
   refresh: () => Promise<void>;
 }
@@ -148,11 +146,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return persistAuth(res);
   }, []);
 
-  const register = useCallback(async (body: RegisterRequest) => {
-    const res = await authApi.register(body);
-    return persistAuth(res);
-  }, []);
-
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -183,11 +176,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       loading,
       hasPermission,
       login,
-      register,
       logout,
       refresh,
     }),
-    [user, loading, hasPermission, login, register, logout, refresh],
+    [user, loading, hasPermission, login, logout, refresh],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

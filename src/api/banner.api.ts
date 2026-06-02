@@ -13,6 +13,7 @@ export interface BannerDto {
   endsAt?: string | null;
   isActive: boolean;
   createdAt: string;
+  styleConfig?: string | null;
 }
 
 export interface CreateBannerDto {
@@ -25,6 +26,7 @@ export interface CreateBannerDto {
   startsAt?: string | null;
   endsAt?: string | null;
   isActive?: boolean;
+  styleConfig?: string | null;
 }
 
 export interface UpdateBannerDto extends Partial<CreateBannerDto> {
@@ -56,4 +58,9 @@ export const bannerApi = {
 
   setOrder: (id: number, order: number) =>
     unwrap(apiClient.put<ApiResponse<BannerDto>>(`${BASE}/${id}/order`, null, { params: { order } })),
+
+  aiSuggest: (imageUrl: string) =>
+    unwrap(apiClient.post<ApiResponse<{ title: string; subtitle: string; source: string }>>(
+      `${BASE}/ai-suggest`, { imageUrl }
+    )),
 };
