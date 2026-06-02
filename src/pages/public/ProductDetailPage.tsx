@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { productDetailApi } from "@/api";
 import { cartApi } from "@/api/cart.api";
-import { productGiftApi, type ProductGiftDto } from "@/api/productGift.api";
+import { giftApi, type ProductGiftItemDto } from "@/api/gift.api";
 import { variantApi, type ProductVariantDto } from "@/api/variant.api";
 import { emitCartUpdated, flyToCart } from "@/utils/cartEvents";
 import { guestCart } from "@/utils/guestCart";
@@ -106,13 +106,13 @@ export default function ProductDetailPage() {
 
   // ----- Variants -----
   const [variants, setVariants] = useState<ProductVariantDto[]>([]);
-  const [gifts, setGifts] = useState<ProductGiftDto[]>([]);
+  const [gifts, setGifts] = useState<ProductGiftItemDto[]>([]);
   const [selectedAttrs, setSelectedAttrs] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!productId) return;
     variantApi.getByProduct(productId).then(setVariants).catch(() => {});
-    productGiftApi.getByProduct(productId).then(setGifts).catch(() => setGifts([]));
+    giftApi.getByProduct(productId).then(setGifts).catch(() => setGifts([]));
   }, [productId]);
 
   // Group attribute options from all active variants
@@ -472,48 +472,57 @@ export default function ProductDetailPage() {
       {gifts.length > 0 && (
         <Section title={`🎁 Quà tặng kèm (${gifts.length})`}>
           <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-3">
-            {gifts.map((g) => {
-              const saving = (g.giftOriginalPrice - g.giftPrice) * g.quantity;
-              return (
-                <li key={g.id}
-                  className="flex gap-3 rounded-xl border border-error-200 bg-error-50/40 p-3 dark:border-error-500/30 dark:bg-error-500/5">
-                  <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white">
-                    <img src={g.giftImageUrl ? getImageUrl(g.giftImageUrl) : IMAGE_PLACEHOLDER}
-                      onError={(e) => { (e.target as HTMLImageElement).src = IMAGE_PLACEHOLDER; }}
-                      alt={g.giftProductName}
-                      className="h-full w-full object-contain" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="line-clamp-2 text-theme-sm font-semibold text-gray-900 dark:text-white">
-                      {g.giftProductName}
-                    </p>
-                    <p className="mt-1 text-theme-xs text-gray-500">
-                      SL: <strong>{g.quantity}</strong>
-                      {g.note ? <> · {g.note}</> : null}
-                    </p>
-                    <div className="mt-1 flex flex-wrap items-baseline gap-1.5">
-                      {g.giftPrice === 0 ? (
-                        <Badge color="error" variant="solid">MIỄN PHÍ</Badge>
-                      ) : (
-                        <span className="text-theme-sm font-bold text-error-500">
-                          {formatVND(g.giftPrice)}
-                        </span>
-                      )}
-                      {g.giftOriginalPrice > 0 && (
-                        <span className="text-theme-xs text-gray-400 line-through">
-                          {formatVND(g.giftOriginalPrice)}
-                        </span>
-                      )}
-                    </div>
-                    {saving > 0 && (
-                      <p className="mt-0.5 text-theme-xs text-success-600">
-                        💰 Tiết kiệm {formatVND(saving)}
-                      </p>
+            {gifts.map((g) => (
+              <li key={g.id}
+                className="flex gap-3 rounded-xl border border-purple-200 bg-purple-50/40 p-3 dark:border-purple-500/30 dark:bg-purple-500/5">
+                {/* Image — fallback to Gift icon if no image */}
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-white dark:bg-gray-800 flex items-center justify-center">
+                  {g.giftImageUrl ? (
+                    <img
+                      src={getImageUrl(g.giftImageUrl)}
+                      onError={(e) => {
+                        const img = e.target as HTMLImageElement;
+                        img.style.display = "none";
+                        const parent = img.parentElement;
+                        if (parent) parent.innerHTML = '<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 12 20 22 4 22 4 12"/><rect x="2" y="7" width="20" height="5"/><line x1="12" y1="22" x2="12" y2="7"/><path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/></svg>';
+                      }}
+                      alt={g.giftName}
+                      className="h-full w-full object-contain"
+                    />
+                  ) : (
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="20 12 20 22 4 22 4 12"/>
+                      <rect x="2" y="7" width="20" height="5"/>
+                      <line x1="12" y1="22" x2="12" y2="7"/>
+                      <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                      <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+                    </svg>
+                  )}
+                </div>
+
+                <div className="flex-1 min-w-0">
+                  <p className="line-clamp-2 text-theme-sm font-semibold text-gray-900 dark:text-white">
+                    {g.giftName || "Quà tặng"}
+                  </p>
+                  <p className="mt-1 text-theme-xs text-gray-500">
+                    SL: <strong>{g.quantity}</strong>
+                    {g.note ? <> · {g.note}</> : null}
+                    {g.stock > 0 && (
+                      <span className="ml-1 text-gray-400">· Kho: {g.stock}</span>
+                    )}
+                  </p>
+                  <div className="mt-1.5">
+                    {g.giftPrice === 0 ? (
+                      <Badge color="error" variant="solid">MIỄN PHÍ</Badge>
+                    ) : (
+                      <span className="text-theme-sm font-bold text-purple-600 dark:text-purple-400">
+                        +{formatVND(g.giftPrice)}
+                      </span>
                     )}
                   </div>
-                </li>
-              );
-            })}
+                </div>
+              </li>
+            ))}
           </ul>
           <p className="mt-3 text-theme-xs text-gray-500">
             🎁 Quà tặng sẽ được tự động thêm vào đơn hàng khi bạn mua sản phẩm này.
