@@ -7,6 +7,21 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ============================================================
+   Brand marquee — auto horizontal scroll (loop liền mạch khi list nhân đôi)
+   ============================================================ */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 35s linear infinite;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-marquee { animation: none; }
+}
+
+/* ============================================================
    Design tokens — colors, typography, shadows
    Same palette as TailAdmin (Brand #465fff).
    ============================================================ */

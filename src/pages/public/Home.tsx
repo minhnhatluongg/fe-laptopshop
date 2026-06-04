@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Gift } from "lucide-react";
-import { giftApi, type ProductGiftItemDto } from "@/api/gift.api";
+import { GiftHoverBadge } from "@/components/product/GiftHoverBadge";
 import { Link } from "react-router-dom";
 import { bannerApi, type BannerDto } from "@/api/banner.api";
 import { brandApi } from "@/api/brand.api";
@@ -16,9 +16,9 @@ import { useToast } from "@/context/ToastContext";
 import { useAuth } from "@/context/AuthContext";
 import { cn } from "@/utils/cn";
 
-/* ── Spec chip icons ── */
-const CPU_ICON = "🔲"; const RAM_ICON = "📦"; const SSD_ICON = "💾";
-const SCR_ICON = "🖥️"; const GPU_ICON = "🎮";
+/* ── Spec chip icons (line-icon names, render trong SpecChip) ── */
+const CPU_ICON = "cpu"; const RAM_ICON = "ram"; const SSD_ICON = "ssd";
+const SCR_ICON = "screen"; const GPU_ICON = "gpu";
 
 /* Parse spec label — ưu tiên các field flat backend trả (cpu/ram/storage/...)
    Fallback: object specification (chi tiết) hoặc parse từ description. */
@@ -58,6 +58,15 @@ function parseSpecs(p: Product): { cpu?: string; ram?: string; ssd?: string; scr
   const ssd  = desc.match(/(\d+(?:GB|TB)\s+(?:SSD|NVMe|Flash))/i)?.[1];
   return { ram, ssd };
 }
+
+/* Trust strip — line icons (path-only để render gọn), một tông trung tính */
+const TRUST_ITEMS = [
+  { text: "Bảo hành 24 tháng",   icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" },
+  { text: "Đổi mới 30 ngày",     icon: "M23 4v6h-6|M1 20v-6h6|M3.51 9a9 9 0 0 1 14.85-3.36L23 10|M1 14l4.64 4.36A9 9 0 0 0 20.49 15" },
+  { text: "Free ship ≥ 10 triệu", icon: "M1 6h13v9H1z|M14 9h4l3 3v3h-7z|M3.5 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z|M17.5 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" },
+  { text: "Hàng chính hãng",     icon: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z|M9 12l2 2 4-4" },
+  { text: "Trả góp 0%",          icon: "M2 5h20v14H2z|M2 10h20" },
+];
 
 // ─────────────────────────────────────────────────────────────────────────────
 export default function HomePage() {
@@ -129,27 +138,29 @@ export default function HomePage() {
     <div className="min-h-screen bg-white dark:bg-gray-950">
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       {banners.length > 0 ? (
-        <HeroCarousel banners={banners} />
+        <div className="px-4 pt-6 md:px-8">
+          <HeroCarousel banners={banners} />
+        </div>
       ) : (
-        <div className="relative overflow-hidden bg-gradient-to-r from-brand-600 via-brand-700 to-purple-800 px-6 py-16 text-white md:px-16 md:py-20">
+        <div className="relative overflow-hidden bg-gradient-to-br from-brand-600 to-brand-800 px-6 py-20 text-white md:px-16 md:py-24">
           <div className="relative z-10 mx-auto max-w-2xl">
-            <p className="mb-2 text-theme-sm font-semibold text-white/70 uppercase tracking-widest">🏆 Nhà phân phối chính hãng</p>
-            <h1 className="font-outfit text-4xl font-extrabold leading-tight md:text-5xl">
-              Laptop chính hãng<br /><span className="text-brand-200">giá tốt nhất 2026</span>
+            <p className="mb-3 text-theme-xs font-semibold uppercase tracking-[0.18em] text-white/60">Nhà phân phối chính hãng</p>
+            <h1 className="font-outfit text-4xl font-bold leading-tight tracking-tight md:text-5xl">
+              Laptop chính hãng,<br />giá tốt nhất 2026.
             </h1>
-            <p className="mt-4 max-w-lg text-white/75">
-              MacBook · Dell · HP · Lenovo · ASUS · Acer · MSI · Razer — bảo hành 24 tháng.
+            <p className="mt-4 max-w-lg text-theme-sm leading-relaxed text-white/70">
+              MacBook, Dell, HP, Lenovo, ASUS, Acer, MSI, Razer. Bảo hành chính hãng tới 24 tháng.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <Link to="/products" className="inline-flex h-12 items-center rounded-xl bg-white px-7 text-base font-bold text-brand-700 hover:bg-brand-50 transition">
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link to="/products" className="inline-flex h-12 items-center rounded-xl bg-white px-7 text-base font-semibold text-brand-700 transition hover:bg-brand-50 active:scale-[0.98]">
                 Mua ngay
               </Link>
-              <Link to="/products?sort=discount" className="inline-flex h-12 items-center rounded-xl border border-white/30 px-7 text-base font-semibold text-white hover:bg-white/10 transition">
+              <Link to="/products?sort=discount" className="inline-flex h-12 items-center rounded-xl border border-white/25 px-7 text-base font-medium text-white transition hover:bg-white/10">
                 Xem khuyến mãi
               </Link>
             </div>
           </div>
-          <div className="absolute -right-20 top-0 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
+          <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-white/5 blur-3xl" />
         </div>
       )}
 
@@ -170,16 +181,15 @@ export default function HomePage() {
 
       {/* ── TRUST STRIP ──────────────────────────────────────────────────────── */}
       <div className="border-b border-gray-100 bg-white dark:border-gray-800 dark:bg-gray-900">
-        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-center gap-x-8 gap-y-2 px-4 py-3 md:px-8">
-          {[
-            { icon: "🛡️", text: "Bảo hành 24 tháng", color: "text-brand-500" },
-            { icon: "🔄", text: "Đổi mới 30 ngày",   color: "text-success-500" },
-            { icon: "🚚", text: "Free ship ≥10 triệu", color: "text-warning-600" },
-            { icon: "✅", text: "Hàng chính hãng",    color: "text-brand-500" },
-            { icon: "💳", text: "Trả góp 0%",          color: "text-purple-500" },
-          ].map((t) => (
-            <span key={t.text} className="flex items-center gap-1.5 text-theme-xs font-medium text-gray-700 dark:text-gray-300">
-              <span className={cn("text-sm", t.color)}>{t.icon}</span>{t.text}
+        <div className="mx-auto flex max-w-screen-2xl flex-wrap items-center justify-center gap-x-7 gap-y-2.5 px-4 py-3.5 md:px-8">
+          {TRUST_ITEMS.map((t, i) => (
+            <span key={t.text} className="flex items-center gap-2.5 text-theme-xs font-medium text-gray-600 dark:text-gray-400">
+              {i > 0 && <span aria-hidden className="hidden h-3.5 w-px bg-gray-200 dark:bg-gray-700 sm:block" />}
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"
+                strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-400 dark:text-gray-500">
+                {t.icon.split("|").map((d, k) => <path key={k} d={d} />)}
+              </svg>
+              {t.text}
             </span>
           ))}
         </div>
@@ -209,11 +219,13 @@ export default function HomePage() {
         {(loading || gamingProducts.length > 0) && (
           <BrandFilterSection
             title="Laptop Gaming"
-            subtitle="Chinh phục mọi tựa game — GPU mạnh mẽ"
+            subtitle="Chinh phục mọi tựa game, GPU mạnh mẽ"
             allProducts={gamingProducts}
             brands={topBrands.filter((b) => ["asus","msi","dell","lenovo","acer","razer"].includes(b.slug ?? ""))}
             loading={loading}
             cta="/products?category=gaming"
+            framed
+            carousel
             onAddToCart={handleAddToCart}
           />
         )}
@@ -222,7 +234,7 @@ export default function HomePage() {
         {(loading || officeProducts.length > 0) && (
           <BrandFilterSection
             title="Laptop Văn Phòng"
-            subtitle="Mỏng nhẹ · Pin lâu · Làm việc không giới hạn"
+            subtitle="Mỏng nhẹ, pin lâu, làm việc không giới hạn"
             allProducts={officeProducts}
             brands={topBrands.filter((b) => ["apple","dell","hp","lenovo","lg","samsung"].includes(b.slug ?? ""))}
             loading={loading}
@@ -231,19 +243,26 @@ export default function HomePage() {
           />
         )}
 
-        {/* Brand strip */}
+        {/* Brand strip — marquee tự trượt ngang, dừng khi hover */}
         {brands.length > 0 && (
-          <div className="rounded-2xl border border-gray-100 bg-gray-50 p-6 dark:border-gray-800 dark:bg-white/[0.02]">
-            <p className="mb-4 text-center text-theme-xs font-semibold uppercase tracking-widest text-gray-400">
+          <div className="rounded-3xl border border-gray-100 bg-gray-50 py-6 dark:border-gray-800 dark:bg-white/[0.02]">
+            <p className="mb-5 text-center text-theme-xs font-semibold uppercase tracking-widest text-gray-400">
               Thương hiệu phân phối chính hãng
             </p>
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {brands.map((b) => (
-                <Link key={b.id} to={`/products?brand=${b.slug}`}
-                  className="rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold tracking-tight text-gray-600 transition hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300">
-                  {b.name}
-                </Link>
-              ))}
+            <div className="group relative overflow-hidden [mask-image:linear-gradient(to_right,transparent,black_6%,black_94%,transparent)]">
+              <div className="flex w-max animate-marquee items-center gap-3 pr-3 group-hover:[animation-play-state:paused]">
+                {[...brands, ...brands].map((b, i) => (
+                  <Link
+                    key={`${b.id}-${i}`}
+                    to={`/products?brand=${b.slug}`}
+                    aria-hidden={i >= brands.length}
+                    tabIndex={i >= brands.length ? -1 : 0}
+                    className="shrink-0 rounded-xl border border-gray-200 bg-white px-5 py-2.5 text-sm font-bold tracking-tight text-gray-600 transition-colors hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:bg-white/[0.03] dark:text-gray-300"
+                  >
+                    {b.name}
+                  </Link>
+                ))}
+              </div>
             </div>
           </div>
         )}
@@ -261,10 +280,12 @@ interface SectionProps {
   loading: boolean;
   cta: string;
   accent?: boolean;
+  framed?: boolean;
+  carousel?: boolean;
   onAddToCart: (product: Product, qty: number, btn: HTMLElement | null) => Promise<void> | void;
 }
 
-function BrandFilterSection({ title, subtitle, allProducts, brands, loading, cta, accent, onAddToCart }: SectionProps) {
+function BrandFilterSection({ title, subtitle, allProducts, brands, loading, cta, accent, framed, carousel, onAddToCart }: SectionProps) {
   const [activeBrand, setActiveBrand] = useState<string | null>(null);
 
   const filtered = activeBrand
@@ -277,7 +298,7 @@ function BrandFilterSection({ title, subtitle, allProducts, brands, loading, cta
   );
 
   return (
-    <section>
+    <section className={cn(framed && "rounded-3xl border border-gray-100 bg-gray-50 p-5 dark:border-gray-800 dark:bg-white/[0.02] md:p-7")}>
       {/* Section header */}
       <div className="mb-4 flex flex-wrap items-center gap-3">
         <div className="mr-2">
@@ -291,8 +312,12 @@ function BrandFilterSection({ title, subtitle, allProducts, brands, loading, cta
         </div>
 
         {/* Free shipping badge */}
-        <span className="hidden items-center gap-1.5 rounded-full border border-success-200 bg-success-50 px-3 py-1 text-theme-xs font-semibold text-success-700 sm:inline-flex dark:border-success-500/30 dark:bg-success-500/10 dark:text-success-400">
-          🚚 Miễn phí giao hàng
+        <span className="hidden items-center gap-1.5 rounded-full border border-gray-200 px-3 py-1 text-theme-xs font-medium text-gray-500 sm:inline-flex dark:border-gray-700 dark:text-gray-400">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+            <path d="M1 6h13v9H1z" /><path d="M14 9h4l3 3v3h-7z" />
+            <path d="M3.5 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" /><path d="M17.5 18.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z" />
+          </svg>
+          Miễn phí giao hàng
         </span>
 
         {/* Brand tabs */}
@@ -323,6 +348,8 @@ function BrandFilterSection({ title, subtitle, allProducts, brands, loading, cta
         </div>
       ) : filtered.length === 0 ? (
         <p className="py-10 text-center text-theme-sm text-gray-400">Không có sản phẩm phù hợp.</p>
+      ) : carousel ? (
+        <ProductCarousel key={activeBrand ?? "all"} products={filtered.slice(0, 10)} />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
           {filtered.slice(0, 10).map((p) => (
@@ -334,127 +361,69 @@ function BrandFilterSection({ title, subtitle, allProducts, brands, loading, cta
   );
 }
 
-// ─── Gift hover badge (public storefront) ────────────────────────────────────
-function GiftHoverBadge({ productId }: { productId: number }) {
-  const [gifts, setGifts]     = useState<ProductGiftItemDto[] | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [visible, setVisible] = useState(false);
-  const wrapRef               = useRef<HTMLDivElement>(null);
-  const showTimer             = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const hideTimer             = useRef<ReturnType<typeof setTimeout> | null>(null);
+/* ─── ProductCarousel ──────────────────────────────────────────────────────────
+ * 1 hàng, mặc định 4 sản phẩm (2 trên mobile). Tự trượt sang phải mỗi 2s,
+ * loop liền mạch (clone phần đầu), dừng khi hover. Tôn trọng reduced-motion.
+ * ─────────────────────────────────────────────────────────────────────────── */
+function ProductCarousel({ products }: { products: Product[] }) {
+  const STEP_MS = 2000;
+  const [per, setPer]       = useState(4);
+  const [idx, setIdx]       = useState(0);
+  const [anim, setAnim]     = useState(true);
+  const [paused, setPaused] = useState(false);
 
-  const fetchIfNeeded = async () => {
-    if (gifts !== null || loading) return;
-    setLoading(true);
-    try {
-      setGifts(await giftApi.getByProduct(productId));
-    } catch {
-      setGifts([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const onEnter = () => {
-    if (hideTimer.current) clearTimeout(hideTimer.current);
-    void fetchIfNeeded();
-    showTimer.current = setTimeout(() => setVisible(true), 150);
-  };
-  const onLeave = () => {
-    if (showTimer.current) clearTimeout(showTimer.current);
-    hideTimer.current = setTimeout(() => setVisible(false), 200);
-  };
-
-  useEffect(() => () => {
-    if (showTimer.current) clearTimeout(showTimer.current);
-    if (hideTimer.current) clearTimeout(hideTimer.current);
+  // Responsive: 4 cột ≥ md, 2 cột mobile
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 768px)");
+    const apply = () => { setPer(mq.matches ? 4 : 2); setIdx(0); };
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
   }, []);
 
+  const loopable = products.length > per;
+  // Clone `per` item đầu vào cuối để wrap mượt
+  const items = loopable ? [...products, ...products.slice(0, per)] : products;
+
+  // Auto-advance mỗi 2s (bỏ qua nếu user tắt animation)
+  useEffect(() => {
+    if (!loopable || paused) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const t = setInterval(() => setIdx((i) => i + 1), STEP_MS);
+    return () => clearInterval(t);
+  }, [loopable, paused, per]);
+
+  // Khi chạm vùng clone → snap về đầu không animation
+  const onTransitionEnd = () => {
+    if (idx >= products.length) { setAnim(false); setIdx(0); }
+  };
+  useEffect(() => {
+    if (!anim) {
+      const r = requestAnimationFrame(() => setAnim(true));
+      return () => cancelAnimationFrame(r);
+    }
+  }, [anim]);
+
   return (
-    <div ref={wrapRef} className="relative" onMouseEnter={onEnter} onMouseLeave={onLeave}>
-      {/* Badge icon */}
-      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white shadow-md text-purple-500 cursor-default">
-        {loading
-          ? <svg className="h-3.5 w-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-            </svg>
-          : <Gift size={15} strokeWidth={2.5} />
-        }
-      </span>
-
-      {/* Popup */}
-      {visible && gifts !== null && (
-        <div
-          className="absolute right-0 top-full z-50 mt-2 w-64 overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-xl dark:border-gray-800 dark:bg-gray-900"
-          onMouseEnter={onEnter} onMouseLeave={onLeave}
-        >
-          {/* Header */}
-          <div className="flex items-center gap-2 border-b border-gray-100 bg-purple-50 px-3 py-2.5 dark:border-gray-800 dark:bg-purple-500/10">
-            <Gift size={13} className="text-purple-500" />
-            <p className="text-[12px] font-semibold text-purple-700 dark:text-purple-300">
-              Quà tặng kèm ({gifts.length})
-            </p>
+    <div
+      className="overflow-hidden"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+    >
+      <div
+        className="flex"
+        style={{
+          transform: `translateX(-${idx * (100 / per)}%)`,
+          transition: anim ? "transform 600ms cubic-bezier(0.4, 0, 0.2, 1)" : "none",
+        }}
+        onTransitionEnd={onTransitionEnd}
+      >
+        {items.map((p, i) => (
+          <div key={`${p.id}-${i}`} className="shrink-0 px-2" style={{ width: `${100 / per}%` }}>
+            <ProductCard product={p} />
           </div>
-
-          {gifts.length === 0 ? (
-            <p className="px-4 py-3 text-[12px] text-gray-400">Chưa có quà tặng nào</p>
-          ) : (
-            <ul className="divide-y divide-gray-50 dark:divide-gray-800/50">
-              {gifts.map((g) => (
-                <li key={g.id} className="flex items-center gap-3 px-3 py-2.5">
-                  {/* Thumbnail or fallback */}
-                  <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg">
-                    {g.giftImageUrl ? (
-                      <img
-                        src={getImageUrl(g.giftImageUrl)}
-                        onError={(e) => {
-                          // Fallback: hide img, show letter placeholder
-                          (e.target as HTMLImageElement).style.display = "none";
-                          const parent = (e.target as HTMLImageElement).parentElement;
-                          if (parent) {
-                            parent.className = parent.className.replace("overflow-hidden", "");
-                            parent.innerHTML = `<div class="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 text-purple-600 text-sm font-bold dark:bg-purple-500/20">${g.giftName.charAt(0).toUpperCase()}</div>`;
-                          }
-                        }}
-                        alt={g.giftName}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-500/20">
-                        <Gift size={16} className="text-purple-500" />
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Info */}
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12px] font-medium text-gray-800 dark:text-white">
-                      {g.giftName}
-                    </p>
-                    <div className="mt-0.5 flex items-center gap-1.5">
-                      <span className="text-[11px] text-gray-400">×{g.quantity}</span>
-                      {g.giftPrice === 0 ? (
-                        <span className="rounded-full bg-success-50 px-1.5 py-0.5 text-[10px] font-semibold text-success-600 dark:bg-success-500/15 dark:text-success-400">
-                          Miễn phí
-                        </span>
-                      ) : (
-                        <span className="text-[11px] text-gray-400">{formatVND(g.giftPrice)}</span>
-                      )}
-                      {g.note && (
-                        <span className="truncate text-[10px] italic text-gray-400">· {g.note}</span>
-                      )}
-                    </div>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          {/* Triangle arrow */}
-          <div className="absolute -top-1.5 right-3 h-3 w-3 rotate-45 border-l border-t border-gray-100 bg-purple-50 dark:border-gray-800 dark:bg-purple-500/10" />
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
@@ -504,7 +473,7 @@ function ProductCard({ product: p }: {
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all hover:-translate-y-1 hover:shadow-theme-lg dark:border-gray-800 dark:bg-white/[0.03]">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-theme-lg dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/30">
       {/* Gift badge — only when product has gifts */}
       {p.hasGifts && (
         <div className="absolute right-3 top-3 z-20">
@@ -580,15 +549,15 @@ function ProductCard({ product: p }: {
           </div>
 
           {/* Rating + comment count */}
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 text-theme-xs text-gray-400">
-            <span className="inline-flex items-center gap-0.5">
-              <span className="text-[11px] text-warning-500">⭐</span>
-              <span>{(p.averageRating ?? 0).toFixed(1)} ({p.totalReviews ?? 0} đánh giá)</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 text-theme-xs text-gray-400">
+            <span className="inline-flex items-center gap-1">
+              <StarIcon />
+              <span>{(p.averageRating ?? 0).toFixed(1)} ({p.totalReviews ?? 0})</span>
             </span>
             {(p.totalComments ?? 0) > 0 && (
-              <span className="inline-flex items-center gap-0.5">
-                <span>💬</span>
-                <span>{p.totalComments} bình luận</span>
+              <span className="inline-flex items-center gap-1">
+                <CommentIcon />
+                <span>{p.totalComments}</span>
               </span>
             )}
           </div>
@@ -599,12 +568,38 @@ function ProductCard({ product: p }: {
   );
 }
 
+const SPEC_ICONS: Record<string, string> = {
+  cpu:    "M6 6h12v12H6z|M9 9h6v6H9z|M9 2v2|M15 2v2|M9 20v2|M15 20v2|M2 9h2|M2 15h2|M20 9h2|M20 15h2",
+  gpu:    "M12 2 2 7l10 5 10-5-10-5z|M2 17l10 5 10-5|M2 12l10 5 10-5",
+  ram:    "M2 7h20v10H2z|M6 7v10|M10 7v10|M14 7v10|M18 7v10",
+  ssd:    "M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z|M2 12h20|M6 16h.01",
+  screen: "M2 3h20v14H2z|M8 21h8|M12 17v4",
+};
 function SpecChip({ icon, children }: { icon: string; children: React.ReactNode }) {
   return (
-    <span className="inline-flex items-center gap-0.5 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-      <span className="text-[9px]">{icon}</span>
+    <span className="inline-flex items-center gap-1 rounded-md bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+        strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-400 dark:text-gray-500">
+        {(SPEC_ICONS[icon] ?? "").split("|").map((d, i) => <path key={i} d={d} />)}
+      </svg>
       {children}
     </span>
+  );
+}
+
+function StarIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 text-warning-400">
+      <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+    </svg>
+  );
+}
+function CommentIcon() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
+      strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z" />
+    </svg>
   );
 }
 
@@ -626,7 +621,7 @@ function ProductCardSkeleton() {
 }
 
 /* ─── HotDealsSection ──────────────────────────────────────────────────────────
- * Section "🔥 Laptop giảm giá sốc" — 8 sản phẩm xếp 2 hàng × 4 cột.
+ * Section "Đang giảm giá" — 8 sản phẩm xếp 2 hàng × 4 cột.
  * Mỗi card có ảnh tự xoay vòng (nếu sản phẩm có nhiều ảnh) mỗi 3s,
  * lệch pha theo index để các card không đổi cùng lúc → nhìn bắt mắt.
  * ─────────────────────────────────────────────────────────────────────────── */
@@ -642,31 +637,32 @@ function HotDealsSection({
   const items = products.slice(0, 8);
 
   return (
-    <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-error-50 via-warning-50 to-brand-50 p-5 dark:from-error-500/10 dark:via-warning-500/5 dark:to-brand-500/10 md:p-7">
-      {/* Decorative blobs */}
-      <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-error-200/40 blur-3xl dark:bg-error-500/10" />
-      <div className="pointer-events-none absolute -right-16 -bottom-16 h-48 w-48 rounded-full bg-brand-200/40 blur-3xl dark:bg-brand-500/10" />
-
+    <section className="rounded-3xl border border-gray-100 bg-gray-50 p-5 dark:border-gray-800 dark:bg-white/[0.02] md:p-7">
       {/* Header */}
-      <div className="relative mb-5 flex flex-wrap items-end justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="font-outfit text-2xl font-extrabold tracking-tight text-error-600 dark:text-error-400 md:text-3xl">
-            🔥 Laptop giảm giá sốc
-          </h2>
-          <p className="mt-1 text-theme-sm text-gray-600 dark:text-gray-300">
-            Khuyến mãi sâu — số lượng có hạn · 8 deal hot nhất hôm nay
+          <div className="flex items-center gap-2">
+            <h2 className="font-outfit text-xl font-bold tracking-tight text-gray-900 dark:text-white md:text-2xl">
+              Đang giảm giá
+            </h2>
+            <span className="rounded-md bg-error-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-error-500 dark:bg-error-500/15">
+              Sale
+            </span>
+          </div>
+          <p className="mt-0.5 text-theme-xs text-gray-500 dark:text-gray-400">
+            Ưu đãi sâu, số lượng có hạn
           </p>
         </div>
         <Link
           to="/products?sort=discount"
-          className="rounded-full bg-error-500 px-5 py-2 text-theme-sm font-bold text-white shadow-md transition hover:bg-error-600"
+          className="shrink-0 text-theme-sm font-semibold text-brand-500 transition-colors hover:text-brand-600 dark:text-brand-400"
         >
           Xem tất cả →
         </Link>
       </div>
 
       {/* Grid 4 × 2 (responsive) */}
-      <div className="relative grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 md:gap-4 lg:grid-cols-4">
         {loading
           ? Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)
           : items.length === 0
@@ -721,7 +717,7 @@ function DealCard({
   }, [images.length, delayMs]);
 
   return (
-    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-white/60 bg-white shadow-sm transition-all hover:-translate-y-1 hover:shadow-theme-lg dark:border-gray-800 dark:bg-gray-900">
+    <div className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-theme-lg dark:border-gray-800 dark:bg-gray-900 dark:hover:border-brand-500/30">
       {/* Discount ribbon */}
       {hasDiscount && (
         <div className="absolute left-0 top-3 z-10 rounded-r-full bg-error-500 px-2.5 py-1 text-[10px] font-extrabold text-white shadow">
@@ -791,14 +787,14 @@ function DealCard({
             </span>
           </div>
 
-          <div className="mt-1 flex flex-wrap items-center gap-x-2 text-theme-xs text-gray-400">
-            <span className="inline-flex items-center gap-0.5">
-              <span className="text-[11px] text-warning-500">⭐</span>
+          <div className="mt-1 flex flex-wrap items-center gap-x-2.5 text-theme-xs text-gray-400">
+            <span className="inline-flex items-center gap-1">
+              <StarIcon />
               <span>{(p.averageRating ?? 0).toFixed(1)} ({p.totalReviews ?? 0})</span>
             </span>
             {(p.totalComments ?? 0) > 0 && (
-              <span className="inline-flex items-center gap-0.5">
-                <span>💬</span>
+              <span className="inline-flex items-center gap-1">
+                <CommentIcon />
                 <span>{p.totalComments}</span>
               </span>
             )}

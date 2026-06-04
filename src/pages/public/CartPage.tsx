@@ -10,6 +10,8 @@ import type { Product, ShoppingCart, UserAddress } from "@/api/types";
 import { computeDiscountPrice, formatVND } from "@/utils/format";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
 import { guestCart, type GuestCartItem } from "@/utils/guestCart";
+import { getApiErrorMessage } from "@/utils/apiError";
+import { ErrorModal } from "@/components/ui/ErrorModal";
 import { cn } from "@/utils/cn";
 
 // inline coupon api (avoid missing file issue)
@@ -53,6 +55,7 @@ export default function CartPage() {
   const [couponLoading, setCouponLoading] = useState(false);
   const [placing, setPlacing]         = useState(false);
   const [step, setStep]               = useState<"cart" | "checkout">("cart");
+  const [orderError, setOrderError]   = useState<string | null>(null);
 
   const load = useCallback(async () => {
     if (!isAuthenticated) { setLoading(false); return; }
@@ -116,10 +119,11 @@ export default function CartPage() {
         notes: notes.trim() || undefined,
       } as Parameters<typeof orderApi.create>[0]);
 
-      toast.success("Đặt hàng thành công! 🎉", `Mã đơn: ${(order as any).orderNumber}`);
+      toast.success("Đặt hàng thành công!", `Mã đơn: ${(order as any).orderNumber}`);
       navigate(`/account/orders`, { replace: true });
     } catch (e) {
-      toast.error("Đặt hàng thất bại", e instanceof Error ? e.message : undefined);
+      // Hiện thông điệp thật từ server qua pop-up (vd: "Số dư ví không đủ ...")
+      setOrderError(getApiErrorMessage(e, "Không thể đặt hàng. Vui lòng thử lại."));
     } finally { setPlacing(false); }
   };
 
@@ -139,6 +143,12 @@ export default function CartPage() {
 
   return (
     <div className="mx-auto max-w-screen-xl px-4 py-8 md:px-8">
+      <ErrorModal
+        open={orderError !== null}
+        onClose={() => setOrderError(null)}
+        title="Đặt hàng không thành công"
+        message={orderError}
+      />
       <h1 className="mb-6 font-outfit text-2xl font-bold text-gray-900 dark:text-white">
         {step === "cart" ? "Giỏ hàng" : "Thanh toán"}
       </h1>
@@ -455,6 +465,7 @@ function GuestCartView() {
   });
   const [placing, setPlacing] = useState(false);
   const [placedOrder, setPlacedOrder] = useState<{ orderNumber: string } | null>(null);
+  const [orderError, setOrderError] = useState<string | null>(null);
 
   // Hydrate product info từ /products/batch
   useEffect(() => {
@@ -517,9 +528,9 @@ function GuestCartView() {
       guestCart.clear();
       setItems([]);
       setPlacedOrder({ orderNumber: (res as { orderNumber?: string }).orderNumber ?? "" });
-      toast.success("Đặt hàng thành công! 🎉", `Mã đơn: ${(res as { orderNumber?: string }).orderNumber ?? ""}`);
+      toast.success("Đặt hàng thành công!", `Mã đơn: ${(res as { orderNumber?: string }).orderNumber ?? ""}`);
     } catch (e) {
-      toast.error("Đặt hàng thất bại", e instanceof Error ? e.message : undefined);
+      setOrderError(getApiErrorMessage(e, "Không thể đặt hàng. Vui lòng thử lại."));
     } finally {
       setPlacing(false);
     }
@@ -578,6 +589,12 @@ function GuestCartView() {
 
   return (
     <div className="mx-auto max-w-screen-xl px-4 py-8 md:px-8">
+      <ErrorModal
+        open={orderError !== null}
+        onClose={() => setOrderError(null)}
+        title="Đặt hàng không thành công"
+        message={orderError}
+      />
       <div className="mb-6 flex items-center justify-between gap-3">
         <h1 className="font-outfit text-2xl font-bold text-gray-900 dark:text-white">
           {step === "cart" ? "Giỏ hàng" : "Thanh toán"}
