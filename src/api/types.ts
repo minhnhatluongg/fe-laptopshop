@@ -91,6 +91,16 @@ export interface CreateBrandRequest {
 
 export type UpdateBrandRequest = Partial<CreateBrandRequest> & { id: number };
 
+// Backend binds BrandQueryParams (Name / IsActive / SortBy / IsAscending) — case-insensitive.
+export interface BrandQuery {
+  pageNumber?: number;
+  pageSize?: number;
+  name?: string;
+  isActive?: boolean;
+  sortBy?: string;
+  isAscending?: boolean;
+}
+
 // ---------- Category ----------
 export interface Category {
   id: number;

@@ -58,9 +58,9 @@ function ActiveToggle({ showroom, onToggled }: { showroom: ShowroomDto; onToggle
 
 // ── Status quick-switcher — dùng position:fixed để thoát overflow clip ────────
 function StatusSwitcher({ showroom, onChanged }: { showroom: ShowroomDto; onChanged: () => void }) {
-  const [open, setOpen]   = useState(false);
-  const [busy, setBusy]   = useState(false);
-  const [pos, setPos]     = useState({ top: 0, left: 0 });
+  const [open, setOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
   const btnRef = useRef<HTMLButtonElement>(null);
   const info = statusInfo(showroom.status);
 
@@ -169,14 +169,14 @@ function SectionLabel({ icon, label }: { icon: string; label: string }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ShowroomsPage() {
-  const [items, setItems]            = useState<ShowroomDto[]>([]);
-  const [loading, setLoading]        = useState(true);
-  const [formOpen, setFormOpen]      = useState(false);
-  const [form, setForm]              = useState<typeof empty>(empty);
-  const [saving, setSaving]          = useState(false);
+  const [items, setItems] = useState<ShowroomDto[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [formOpen, setFormOpen] = useState(false);
+  const [form, setForm] = useState<typeof empty>(empty);
+  const [saving, setSaving] = useState(false);
   const [deleteTarget, setDelTarget] = useState<ShowroomDto | null>(null);
-  const [deleting, setDeleting]      = useState(false);
-  const [previewId, setPreviewId]    = useState<number | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [previewId, setPreviewId] = useState<number | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -402,7 +402,7 @@ export default function ShowroomsPage() {
             <Field label="Số điện thoại">
               <Input value={form.phone}
                 onChange={e => setForm({ ...form, phone: e.target.value })}
-                placeholder="1900 5301" />
+                placeholder="0798175906" />
             </Field>
             <Field label="Email">
               <Input type="email" value={form.email}

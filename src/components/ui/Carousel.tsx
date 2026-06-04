@@ -70,7 +70,7 @@ export function HeroCarousel({ banners, autoPlayMs = 5000 }: CarouselProps) {
 
   return (
     <section
-      className="group relative mx-auto w-full max-w-screen-2xl overflow-hidden rounded-2xl shadow-xl select-none"
+      className="group relative mx-auto w-full max-w-screen-2xl select-none overflow-hidden rounded-2xl shadow-sm ring-1 ring-black/5 dark:ring-white/10"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       style={{
@@ -129,9 +129,9 @@ export function HeroCarousel({ banners, autoPlayMs = 5000 }: CarouselProps) {
                   />
                 </div>
 
-                {/* Gradient overlays */}
-                <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/25 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-transparent to-transparent" />
+                {/* Gradient overlays — đủ tương phản chữ, nhẹ hơn để thoáng */}
+                <div className="absolute inset-0 bg-gradient-to-r from-black/55 via-black/20 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/25 via-transparent to-transparent" />
 
                 {/* Slide text */}
                 <div
@@ -190,8 +190,8 @@ export function HeroCarousel({ banners, autoPlayMs = 5000 }: CarouselProps) {
             className={cn(
               "absolute left-4 top-1/2 z-20 -translate-y-1/2",
               "flex h-11 w-11 items-center justify-center rounded-full",
-              "border border-white/25 bg-black/30 text-white backdrop-blur-sm",
-              "transition-all duration-200 hover:bg-brand-500 hover:border-brand-500 hover:scale-110 active:scale-95",
+              "border border-white/20 bg-black/25 text-white backdrop-blur-sm",
+              "transition-colors duration-200 hover:bg-brand-500 hover:border-brand-500",
               "opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0",
             )}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
@@ -203,8 +203,8 @@ export function HeroCarousel({ banners, autoPlayMs = 5000 }: CarouselProps) {
             className={cn(
               "absolute right-4 top-1/2 z-20 -translate-y-1/2",
               "flex h-11 w-11 items-center justify-center rounded-full",
-              "border border-white/25 bg-black/30 text-white backdrop-blur-sm",
-              "transition-all duration-200 hover:bg-brand-500 hover:border-brand-500 hover:scale-110 active:scale-95",
+              "border border-white/20 bg-black/25 text-white backdrop-blur-sm",
+              "transition-colors duration-200 hover:bg-brand-500 hover:border-brand-500",
               "opacity-0 translate-x-2 group-hover:opacity-100 group-hover:translate-x-0",
             )}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">

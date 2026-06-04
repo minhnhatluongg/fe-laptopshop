@@ -7,38 +7,32 @@ const STATIC_INFO = [
   {
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.58a16 16 0 0 0 6 6l1.27-.85a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 12a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 1.27h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L7.91 8.58a16 16 0 0 0 6 6l1.27-.85a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z" />
       </svg>
     ),
     label: "Hotline hỗ trợ",
-    value: "1900 5301",
-    sub: "T2 – CN: 8:00 – 22:00",
-    color: "text-brand-500",
-    bg: "bg-brand-50 dark:bg-brand-500/10",
+    value: "0798175906",
+    sub: "T2 - CN: 8:00 - 22:00",
   },
   {
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>
+        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" /><polyline points="22,6 12,13 2,6" />
       </svg>
     ),
     label: "Email hỗ trợ",
-    value: "support@laptopshop.vn",
+    value: "cusocisme@gmail.com",
     sub: "Phản hồi trong 24 giờ",
-    color: "text-success-600",
-    bg: "bg-success-50 dark:bg-success-500/10",
   },
   {
     icon: (
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
       </svg>
     ),
     label: "Giờ làm việc",
-    value: "8:00 – 22:00 hàng ngày",
-    sub: "Kể cả T7, CN & lễ",
-    color: "text-warning-600",
-    bg: "bg-warning-50 dark:bg-warning-500/10",
+    value: "8:00 - 22:00 hàng ngày",
+    sub: "Kể cả T7, CN và lễ",
   },
 ];
 
@@ -46,7 +40,7 @@ const STATIC_INFO = [
 const FAQS = [
   {
     q: "Tôi có thể đặt hàng online và nhận tại showroom không?",
-    a: "Có. Chọn hình thức nhận tại cửa hàng khi thanh toán — đơn sẽ được giữ 48 giờ sau khi xác nhận.",
+    a: "Có. Chọn hình thức nhận tại cửa hàng khi thanh toán, đơn sẽ được giữ 48 giờ sau khi xác nhận.",
   },
   {
     q: "Chính sách bảo hành của LaptopShop như thế nào?",
@@ -67,14 +61,14 @@ function FAQ({ q, a }: { q: string; a: string }) {
   return (
     <div className="border-b border-gray-100 dark:border-gray-800">
       <button type="button" onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between py-4 text-left text-sm font-semibold text-gray-800 dark:text-white">
+        className="flex w-full items-center justify-between py-4 text-left text-theme-sm font-semibold text-gray-800 dark:text-white">
         {q}
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"
           className={cn("shrink-0 ml-4 transition-transform", open && "rotate-180")}>
-          <polyline points="6 9 12 15 18 9"/>
+          <polyline points="6 9 12 15 18 9" />
         </svg>
       </button>
-      {open && <p className="pb-4 text-sm leading-relaxed text-gray-500 dark:text-gray-400">{a}</p>}
+      {open && <p className="pb-4 text-theme-sm leading-relaxed text-gray-500 dark:text-gray-400">{a}</p>}
     </div>
   );
 }
@@ -98,11 +92,11 @@ function ShowroomMap({ showroom }: { showroom: ShowroomDto }) {
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function ContactPage() {
-  const [showrooms, setShowrooms]   = useState<ShowroomDto[]>([]);
-  const [activeIdx, setActiveIdx]   = useState(0);
+  const [showrooms, setShowrooms] = useState<ShowroomDto[]>([]);
+  const [activeIdx, setActiveIdx] = useState(0);
   const [loadingMap, setLoadingMap] = useState(true);
   const [form, setForm] = useState({ name: "", phone: "", email: "", message: "" });
-  const [sent, setSent]     = useState(false);
+  const [sent, setSent] = useState(false);
   const [sending, setSending] = useState(false);
 
   useEffect(() => {
@@ -127,14 +121,14 @@ export default function ContactPage() {
 
       {/* Hero */}
       <div className="mb-12 text-center">
-        <span className="inline-block rounded-full bg-brand-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+        <span className="inline-block rounded-full bg-brand-50 px-4 py-1.5 text-theme-xs font-semibold uppercase tracking-widest text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
           Hỗ trợ khách hàng
         </span>
         <h1 className="mt-3 font-outfit text-3xl font-bold text-gray-900 dark:text-white md:text-4xl">
           Liên hệ với chúng tôi
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-gray-500 dark:text-gray-400">
-          Đội ngũ tư vấn của LaptopShop luôn sẵn sàng hỗ trợ bạn — từ chọn máy, tư vấn cấu hình đến sau khi mua hàng.
+          Đội ngũ tư vấn của LaptopShop luôn sẵn sàng hỗ trợ bạn, từ chọn máy, tư vấn cấu hình đến sau khi mua hàng.
         </p>
       </div>
 
@@ -142,12 +136,12 @@ export default function ContactPage() {
       <div className="mb-10 grid gap-4 sm:grid-cols-3">
         {STATIC_INFO.map(c => (
           <div key={c.label}
-            className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-5 dark:border-gray-800 dark:bg-white/[0.03]">
-            <div className={cn("rounded-xl p-3 shrink-0", c.bg, c.color)}>{c.icon}</div>
+            className="flex items-start gap-3 rounded-2xl border border-gray-200 bg-white p-5 transition-colors hover:border-brand-200 dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/30">
+            <div className="shrink-0 rounded-xl bg-brand-50 p-3 text-brand-500 dark:bg-brand-500/15 dark:text-brand-400">{c.icon}</div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">{c.label}</p>
+              <p className="text-theme-xs font-semibold uppercase tracking-wider text-gray-400">{c.label}</p>
               <p className="mt-0.5 font-semibold text-gray-900 dark:text-white">{c.value}</p>
-              <p className="text-xs text-gray-500">{c.sub}</p>
+              <p className="text-theme-xs text-gray-500">{c.sub}</p>
             </div>
           </div>
         ))}
@@ -163,7 +157,7 @@ export default function ContactPage() {
           <div className="h-80 animate-pulse rounded-2xl bg-gray-100 dark:bg-gray-800" />
         ) : showrooms.length === 0 ? (
           <div className="flex h-52 items-center justify-center rounded-2xl border border-dashed border-gray-300 text-gray-400 dark:border-gray-700">
-            Chưa có thông tin showroom. Vui lòng liên hệ hotline 1900 5301.
+            Chưa có thông tin showroom. Vui lòng liên hệ hotline 0798175906.
           </div>
         ) : (
           <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-white/[0.03] lg:grid lg:grid-cols-[300px_1fr]">
@@ -184,7 +178,7 @@ export default function ContactPage() {
                 >
                   <div className="flex w-full items-center justify-between gap-2">
                     <span className={cn(
-                      "font-semibold text-sm",
+                      "font-semibold text-theme-sm",
                       i === activeIdx ? "text-brand-600 dark:text-brand-400" : "text-gray-900 dark:text-white"
                     )}>
                       {s.name}
@@ -200,14 +194,22 @@ export default function ContactPage() {
                       ) : null;
                     })()}
                   </div>
-                  <span className="text-xs text-gray-500 line-clamp-2">{s.address}</span>
+                  <span className="text-theme-xs text-gray-500 line-clamp-2">{s.address}</span>
                   {s.phone && (
-                    <span className="text-xs font-medium text-brand-600 dark:text-brand-400">
-                      📞 {s.phone}
+                    <span className="inline-flex items-center gap-1.5 text-theme-xs font-medium text-brand-600 dark:text-brand-400">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07A19.5 19.5 0 0 1 4.69 11.5a19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 3.6 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" />
+                      </svg>
+                      {s.phone}
                     </span>
                   )}
                   {s.openingHours && (
-                    <span className="text-xs text-gray-400">🕐 {s.openingHours}</span>
+                    <span className="inline-flex items-center gap-1.5 text-theme-xs text-gray-400">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                        <circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" />
+                      </svg>
+                      {s.openingHours}
+                    </span>
                   )}
                 </button>
               ))}
@@ -220,11 +222,11 @@ export default function ContactPage() {
               {/* Info overlay */}
               {activeShowroom && (
                 <div className="absolute bottom-3 left-3 right-3 rounded-xl border border-white/30 bg-white/90 px-4 py-3 shadow-lg backdrop-blur-sm dark:bg-gray-900/90">
-                  <p className="font-semibold text-sm text-gray-900 dark:text-white">{activeShowroom.name}</p>
-                  <p className="text-xs text-gray-500 mt-0.5">{activeShowroom.address}</p>
+                  <p className="font-semibold text-theme-sm text-gray-900 dark:text-white">{activeShowroom.name}</p>
+                  <p className="text-theme-xs text-gray-500 mt-0.5">{activeShowroom.address}</p>
                   {activeShowroom.phone && (
                     <a href={`tel:${activeShowroom.phone}`}
-                      className="mt-1 inline-block text-xs font-medium text-brand-600 hover:underline dark:text-brand-400">
+                      className="mt-1 inline-block text-theme-xs font-medium text-brand-600 hover:underline dark:text-brand-400">
                       {activeShowroom.phone}
                     </a>
                   )}
@@ -244,40 +246,44 @@ export default function ContactPage() {
 
           {sent ? (
             <div className="flex flex-col items-center justify-center py-8 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-50 text-3xl dark:bg-success-500/10">✓</div>
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-success-50 text-success-600 dark:bg-success-500/10 dark:text-success-400">
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
               <p className="font-semibold text-gray-900 dark:text-white">Đã gửi thành công!</p>
-              <p className="mt-1 text-sm text-gray-500">Chúng tôi sẽ phản hồi trong vòng 24 giờ.</p>
+              <p className="mt-1 text-theme-sm text-gray-500">Chúng tôi sẽ phản hồi trong vòng 24 giờ.</p>
               <button type="button"
                 onClick={() => { setSent(false); setForm({ name: "", phone: "", email: "", message: "" }); }}
-                className="mt-5 text-sm font-medium text-brand-500 hover:underline">
+                className="mt-5 text-theme-sm font-medium text-brand-500 hover:underline">
                 Gửi tin nhắn khác
               </button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               {[
-                { field: "name",  label: "Họ tên *",         type: "text",  placeholder: "Nguyễn Văn A" },
-                { field: "phone", label: "Số điện thoại *",  type: "tel",   placeholder: "0901 234 567" },
-                { field: "email", label: "Email",             type: "email", placeholder: "email@example.com" },
+                { field: "name", label: "Họ tên *", type: "text", placeholder: "Nguyễn Văn A" },
+                { field: "phone", label: "Số điện thoại *", type: "tel", placeholder: "0901 234 567" },
+                { field: "email", label: "Email", type: "email", placeholder: "email@example.com" },
               ].map(({ field, label, type, placeholder }) => (
                 <div key={field}>
-                  <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
+                  <label className="mb-1 block text-theme-xs font-medium text-gray-500 dark:text-gray-400">{label}</label>
                   <input type={type} value={form[field as keyof typeof form]}
                     onChange={e => setForm({ ...form, [field]: e.target.value })}
                     placeholder={placeholder}
-                    className="h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                    className="h-10 w-full rounded-xl border border-gray-200 bg-white px-3 text-theme-sm transition-colors focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
                   />
                 </div>
               ))}
               <div>
-                <label className="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">Nội dung</label>
+                <label className="mb-1 block text-theme-xs font-medium text-gray-500 dark:text-gray-400">Nội dung</label>
                 <textarea value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}
                   placeholder="Bạn cần tư vấn gì?" rows={4}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
+                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-theme-sm transition-colors focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-500/10 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200"
                 />
               </div>
               <button type="submit" disabled={sending || !form.name.trim() || !form.phone.trim()}
-                className="h-11 w-full rounded-xl bg-brand-500 text-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60">
+                className="h-11 w-full rounded-xl bg-brand-500 text-theme-sm font-semibold text-white transition hover:bg-brand-600 disabled:opacity-60">
                 {sending ? "Đang gửi..." : "Gửi tin nhắn"}
               </button>
             </form>

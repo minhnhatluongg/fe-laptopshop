@@ -164,17 +164,17 @@ export function PublicHeader() {
   };
 
   return (
-    <header className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-800 dark:bg-gray-900/95">
+    <header className="sticky top-0 z-40 border-b border-gray-100 bg-white/85 backdrop-blur-md dark:border-gray-800 dark:bg-gray-900/85">
       <div className="mx-auto flex h-16 max-w-screen-2xl items-center justify-between gap-6 px-4 lg:px-8">
         {/* Logo */}
         <Link to="/" className="flex shrink-0 items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-500 text-white">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-500 text-white">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <rect x="3" y="4" width="18" height="12" rx="2" />
               <path d="M2 20h20" />
             </svg>
           </div>
-          <span className="font-outfit text-lg font-bold text-gray-900 dark:text-white">
+          <span className="font-outfit text-lg font-bold tracking-tight text-gray-900 dark:text-white">
             LaptopShop
           </span>
         </Link>
@@ -188,10 +188,10 @@ export function PublicHeader() {
               end={link.to === "/"}
               className={({ isActive }) =>
                 cn(
-                  "rounded-lg px-3 py-2 text-theme-sm font-medium transition-colors",
+                  "relative px-3 py-2 text-theme-sm transition-colors",
                   isActive
-                    ? "bg-brand-50 text-brand-500 dark:bg-brand-500/[0.12] dark:text-brand-400"
-                    : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5",
+                    ? "font-semibold text-gray-900 after:absolute after:inset-x-3 after:-bottom-0.5 after:h-0.5 after:rounded-full after:bg-brand-500 dark:text-white"
+                    : "font-medium text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white",
                 )
               }
             >
@@ -213,7 +213,7 @@ export function PublicHeader() {
               to="/cart"
               aria-label="Giỏ hàng"
               data-cart-icon
-              className="relative flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5"
+              className="relative flex h-11 w-11 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="9" cy="21" r="1" /><circle cx="20" cy="21" r="1" />
@@ -449,13 +449,13 @@ export function PublicHeader() {
             <div className="hidden items-center gap-2 md:flex">
               <Link
                 to="/auth/login"
-                className="inline-flex h-11 items-center rounded-lg border border-gray-200 px-4 text-theme-sm font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-white/5"
+                className="inline-flex h-11 items-center rounded-lg px-3 text-theme-sm font-medium text-gray-600 transition-colors hover:text-gray-900 dark:text-gray-300 dark:hover:text-white"
               >
                 Đăng nhập
               </Link>
               <Link
                 to="/auth/register"
-                className="inline-flex h-11 items-center rounded-lg bg-brand-500 px-4 text-theme-sm font-medium text-white hover:bg-brand-600"
+                className="inline-flex h-11 items-center rounded-lg bg-brand-500 px-4 text-theme-sm font-semibold text-white shadow-sm transition-colors hover:bg-brand-600"
               >
                 Đăng ký
               </Link>
@@ -470,7 +470,7 @@ export function PublicHeader() {
             type="button"
             onClick={() => setMobileOpen((v) => !v)}
             aria-label="Toggle menu"
-            className="flex h-11 w-11 items-center justify-center rounded-lg border border-gray-200 text-gray-500 hover:bg-gray-50 lg:hidden dark:border-gray-800 dark:text-gray-400 dark:hover:bg-white/5"
+            className="flex h-11 w-11 items-center justify-center rounded-lg text-gray-600 transition-colors hover:bg-gray-100 lg:hidden dark:text-gray-300 dark:hover:bg-white/5"
           >
             {mobileOpen ? (
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -513,9 +513,10 @@ export function PublicHeader() {
               <Link
                 to="/admin"
                 onClick={() => setMobileOpen(false)}
-                className="rounded-lg px-3 py-2 text-theme-sm font-semibold text-brand-500 hover:bg-brand-50"
+                className="flex items-center gap-2 rounded-lg px-3 py-2 text-theme-sm font-semibold text-brand-500 hover:bg-brand-50 dark:hover:bg-brand-500/[0.12]"
               >
-                ⊞ Vào Dashboard
+                <DashboardIcon />
+                Vào Dashboard
               </Link>
             )}
             {!isAuthenticated && (

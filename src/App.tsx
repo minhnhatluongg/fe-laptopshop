@@ -29,6 +29,7 @@ const AdminUsersPage      = lazy(() => import("@/pages/admin/users/UsersPage"));
 const AdminWalletCodes    = lazy(() => import("@/pages/admin/wallet/WalletCodesPage"));
 const AdminLoyaltyTiers   = lazy(() => import("@/pages/admin/loyalty/LoyaltyTiersPage"));
 const AdminShowroomsPage  = lazy(() => import("@/pages/admin/showrooms/ShowroomsPage"));
+const AdminBrandsPage     = lazy(() => import("@/pages/admin/brands/BrandsPage"));
 const AdminGiftsPage      = lazy(() => import("@/pages/admin/gifts/GiftsPage"));
 const ProductsPage        = lazy(() => import("@/pages/public/ProductsPage"));
 const ProductDetailPage   = lazy(() => import("@/pages/public/ProductDetailPage"));
@@ -95,7 +96,7 @@ export default function App() {
               <Route path="products/:id" element={<AdminProductForm />} />
               <Route path="products/:id/gifts" element={<AdminProductGifts />} />
               <Route path="categories"   element={<AdminPlaceholder title="Quản lý danh mục" />} />
-              <Route path="brands"       element={<AdminPlaceholder title="Quản lý thương hiệu" />} />
+              <Route path="brands"       element={<AdminBrandsPage />} />
               <Route path="inventory"    element={<AdminPlaceholder title="Quản lý tồn kho" />} />
               <Route path="orders"       element={<AdminOrdersPage />} />
               <Route path="users"        element={<AdminUsersPage />} />

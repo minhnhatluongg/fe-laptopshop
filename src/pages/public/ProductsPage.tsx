@@ -5,6 +5,7 @@ import { categoryApi } from "@/api/category.api";
 import { productApi } from "@/api/product.api";
 import type { Brand, Category, Product, ProductFilter } from "@/api/types";
 import { Badge } from "@/components/ui/Badge";
+import { GiftHoverBadge } from "@/components/product/GiftHoverBadge";
 import { computeDiscountPrice, formatVND } from "@/utils/format";
 import { getImageUrl, IMAGE_PLACEHOLDER } from "@/utils/image";
 import { cn } from "@/utils/cn";
@@ -109,7 +110,18 @@ export default function ProductsPage() {
   useEffect(() => { void load(); }, [load]);
 
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const childCats  = categories.filter((c) => c.parentId);
+  // API categories hiện chỉ trả {id, name, slug, description} — KHÔNG có parentId/isActive/displayOrder.
+  // Phải robust với các field thiếu, nếu không filter sẽ rỗng và mục "Danh mục" chỉ còn nút "Tất cả".
+  const displayCats = useMemo(() => {
+    const hasHierarchy = categories.some((c) => c.parentId != null);
+    // Có phân cấp → ưu tiên danh mục con; catalog phẳng → hiển thị tất cả.
+    const list = hasHierarchy ? categories.filter((c) => c.parentId != null) : categories;
+    // Chỉ loại mục đã tắt khi backend thực sự trả isActive === false (undefined vẫn giữ).
+    return list
+      .filter((c) => c.isActive !== false)
+      .slice()
+      .sort((a, b) => (a.displayOrder ?? 0) - (b.displayOrder ?? 0));
+  }, [categories]);
 
   const resetPage = () => setPage(1);
 
@@ -117,27 +129,29 @@ export default function ProductsPage() {
     <div className="mx-auto max-w-screen-2xl px-4 py-8 md:px-8">
       {/* Page title */}
       <div className="mb-6">
-        <h1 className="font-outfit text-2xl font-bold text-gray-900 dark:text-white">
+        <h1 className="font-outfit text-2xl font-bold tracking-tight text-gray-900 dark:text-white md:text-3xl">
           {brandSlug
             ? `${brands.find((b) => b.slug === brandSlug)?.name ?? "Thương hiệu"}`
             : catSlug
             ? `${categories.find((c) => c.slug === catSlug)?.name ?? "Danh mục"}`
             : "Tất cả sản phẩm"}
         </h1>
-        <p className="mt-1 text-theme-sm text-gray-500 dark:text-gray-400">
-          {loading ? "Đang tải..." : `${total.toLocaleString()} sản phẩm`}
+        <p className="mt-1.5 text-theme-sm text-gray-500 dark:text-gray-400">
+          {loading
+            ? "Đang tải sản phẩm..."
+            : <><span className="font-semibold text-gray-700 dark:text-gray-300">{total.toLocaleString()}</span> sản phẩm</>}
         </p>
       </div>
 
       <div className="flex gap-6 lg:items-start">
         {/* ── Sidebar filters ────────────────────────────────────────── */}
-        <aside className="hidden w-56 shrink-0 space-y-6 lg:block">
+        <aside className="hidden w-60 shrink-0 space-y-7 lg:sticky lg:top-20 lg:block">
           {/* Categories */}
           <FilterSection title="Danh mục">
             <FilterChip active={!catSlug} onClick={() => { setCatSlug(""); resetPage(); }}>
               Tất cả
             </FilterChip>
-            {childCats.map((c) => (
+            {displayCats.map((c) => (
               <FilterChip
                 key={c.id}
                 active={catSlug === c.slug}
@@ -191,7 +205,7 @@ export default function ProductsPage() {
                 className="h-10 rounded-xl border border-gray-200 bg-white px-3 text-theme-xs text-gray-700 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300 focus:outline-none"
               >
                 <option value="">Danh mục</option>
-                {childCats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
+                {displayCats.map((c) => <option key={c.id} value={c.slug}>{c.name}</option>)}
               </select>
               <select
                 value={brandSlug}
@@ -214,18 +228,18 @@ export default function ProductsPage() {
               ))}
             </select>
 
-            {/* Page size */}
-            <div className="flex items-center gap-1 text-theme-xs text-gray-500">
+            {/* Page size — segmented control */}
+            <div className="inline-flex h-10 items-center rounded-xl border border-gray-200 p-0.5 dark:border-gray-700">
               {PAGE_SIZES.map((s) => (
                 <button
                   key={s}
                   type="button"
                   onClick={() => { setPageSize(s); resetPage(); }}
                   className={cn(
-                    "h-8 w-9 rounded-lg text-theme-xs font-medium transition-colors",
+                    "h-9 w-9 rounded-lg text-theme-xs font-semibold transition-colors",
                     pageSize === s
                       ? "bg-brand-500 text-white"
-                      : "border border-gray-200 text-gray-600 hover:border-brand-300 hover:text-brand-500 dark:border-gray-700 dark:text-gray-400",
+                      : "text-gray-500 hover:text-brand-500 dark:text-gray-400",
                   )}
                 >
                   {s}
@@ -233,44 +247,51 @@ export default function ProductsPage() {
               ))}
             </div>
 
-            {/* Active filter chips */}
+            {/* Clear filters */}
             {(catSlug || brandSlug || search) && (
               <button
                 type="button"
                 onClick={() => { setSearch(""); setCatSlug(""); setBrandSlug(""); resetPage(); }}
-                className="h-8 rounded-lg border border-gray-200 px-3 text-theme-xs text-gray-500 hover:border-error-300 hover:text-error-500 dark:border-gray-700"
+                className="inline-flex h-10 items-center gap-1.5 rounded-xl border border-gray-200 px-3 text-theme-sm text-gray-500 transition-colors hover:border-error-300 hover:text-error-500 dark:border-gray-700"
               >
-                Xoá bộ lọc ×
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+                Xoá bộ lọc
               </button>
             )}
           </div>
 
           {/* Product grid */}
           {loading ? (
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               {Array.from({ length: pageSize }).map((_, i) => (
                 <ProductSkeleton key={i} />
               ))}
             </div>
           ) : products.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 text-center">
-              <div className="mb-4 text-5xl">🔍</div>
+            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-gray-200 py-20 text-center dark:border-gray-800">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-gray-100 text-gray-400 dark:bg-gray-800 dark:text-gray-500">
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
+                </svg>
+              </div>
               <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
                 Không tìm thấy sản phẩm
               </h3>
-              <p className="mt-2 text-theme-sm text-gray-500">
+              <p className="mt-2 max-w-xs text-theme-sm text-gray-500">
                 Thử thay đổi bộ lọc hoặc từ khoá tìm kiếm.
               </p>
               <button
                 type="button"
                 onClick={() => { setSearch(""); setCatSlug(""); setBrandSlug(""); resetPage(); }}
-                className="mt-4 inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-theme-sm font-medium text-white hover:bg-brand-600"
+                className="mt-5 inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-theme-sm font-medium text-white transition-colors hover:bg-brand-600 active:scale-[0.98]"
               >
-                Xem tất cả
+                Xem tất cả sản phẩm
               </button>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+            <div className="grid gap-5 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
               {products.map((p) => <ProductCard key={p.id} product={p} />)}
             </div>
           )}
@@ -279,7 +300,7 @@ export default function ProductsPage() {
           {!loading && totalPages > 1 && (
             <div className="mt-8 flex flex-wrap items-center justify-between gap-3">
               <p className="text-theme-sm text-gray-500 dark:text-gray-400">
-                {(page - 1) * pageSize + 1}–{Math.min(page * pageSize, total)} / {total} sản phẩm
+                {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, total)} / {total} sản phẩm
               </p>
               <div className="flex items-center gap-1.5">
                 <PaginationBtn disabled={page <= 1} onClick={() => setPage(1)}>«</PaginationBtn>
@@ -363,7 +384,7 @@ function ProductCard({ product: p }: { product: Product }) {
   const hasDiscount = (p.discount ?? 0) > 0;
 
   // Gộp pin + cân nặng ("60Wh • 1.4kg") để tiết kiệm dòng
-  const batteryWeight = [p.battery, p.weight].filter(Boolean).join(" • ");
+  const batteryWeight = [p.battery, p.weight].filter(Boolean).join(" · ");
   const screen = p.screen;
   const rating = p.averageRating ?? 0;
   const totalReviews = p.totalReviews ?? 0;
@@ -406,10 +427,16 @@ function ProductCard({ product: p }: { product: Product }) {
   return (
     <Link
       to={`/products/${p.slug}`}
-      className="group flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all hover:-translate-y-1 hover:shadow-theme-lg dark:border-gray-800 dark:bg-white/[0.03]"
+      className="group relative flex flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-200 hover:-translate-y-1 hover:border-brand-200 hover:shadow-theme-lg dark:border-gray-800 dark:bg-white/[0.03] dark:hover:border-brand-500/30"
     >
+      {p.hasGifts && (
+        <div className="absolute right-3 top-3 z-20"
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+          <GiftHoverBadge productId={p.id} />
+        </div>
+      )}
       <div
-        className="relative aspect-4/3 overflow-hidden bg-gray-100 dark:bg-gray-800"
+        className="relative aspect-4/3 overflow-hidden bg-gray-50 dark:bg-gray-900"
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -421,83 +448,113 @@ function ProductCard({ product: p }: { product: Product }) {
             alt={p.name}
             loading="lazy"
             className={cn(
-              "absolute inset-0 h-full w-full object-contain transition-opacity duration-500",
+              "absolute inset-0 h-full w-full object-contain p-3 transition-opacity duration-500",
               i === idx ? "opacity-100" : "opacity-0",
             )}
           />
         ))}
         {hasDiscount && (
           <div className="absolute left-3 top-3 z-10">
-            <Badge color="error" variant="solid" size="sm">−{p.discount}%</Badge>
+            <Badge color="error" variant="solid" size="sm">-{p.discount}%</Badge>
           </div>
         )}
         {images.length > 1 && (
-          <div className="absolute bottom-1.5 left-1/2 flex -translate-x-1/2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+          <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
             {images.map((_, i) => (
               <span
                 key={i}
-                className={cn("h-1 rounded-full transition-all", i === idx ? "w-3 bg-brand-500" : "w-1 bg-gray-300")}
+                className={cn("h-1 rounded-full transition-all", i === idx ? "w-3 bg-brand-500" : "w-1 bg-gray-300 dark:bg-gray-600")}
               />
             ))}
           </div>
         )}
       </div>
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="line-clamp-2 min-h-[2.5rem] text-theme-sm font-semibold leading-snug text-gray-800 group-hover:text-brand-500 dark:text-white/90">
+        <h3 className="line-clamp-2 min-h-[2.5rem] text-theme-sm font-semibold leading-snug text-gray-800 transition-colors group-hover:text-brand-500 dark:text-white/90">
           {p.name}
         </h3>
 
         {/* Specs tóm tắt */}
-        <ul className="mt-3 space-y-1 rounded-lg bg-gray-50 px-3 py-2 text-theme-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
-          {p.cpu && <SpecLine icon="⚙" text={p.cpu} />}
-          {p.gpu && <SpecLine icon="🎮" text={p.gpu} />}
+        <ul className="mt-3 space-y-1.5 rounded-xl bg-gray-50 px-3 py-2.5 text-theme-xs text-gray-600 dark:bg-white/[0.03] dark:text-gray-300">
+          {p.cpu && <SpecLine icon="cpu" text={p.cpu} />}
+          {p.gpu && <SpecLine icon="gpu" text={p.gpu} />}
           {(p.ram || p.storage) && (
             <SpecLine
-              icon="💾"
-              text={[p.ram, p.storage].filter(Boolean).join(" • ")}
-              extra={screen ? <span className="text-gray-500">📺 {screen}</span> : null}
+              icon="memory"
+              text={[p.ram, p.storage].filter(Boolean).join(" · ")}
+              extra={screen ? { icon: "screen", text: screen } : undefined}
             />
           )}
-          {batteryWeight && <SpecLine icon="🔋" text={batteryWeight} />}
+          {batteryWeight && <SpecLine icon="battery" text={batteryWeight} />}
         </ul>
 
-        {/* Price */}
-        <div className="mt-3 flex items-baseline gap-2">
+        {/* Price + rating — ghim đáy để các card thẳng hàng dù số dòng specs khác nhau */}
+        <div className="mt-auto pt-3">
           {hasDiscount && (
             <span className="text-theme-xs text-gray-400 line-through">
               {formatVND(p.price)}
             </span>
           )}
-        </div>
-        <div className="flex items-baseline gap-2">
-          <span className="font-outfit text-lg font-extrabold text-error-500">
-            {formatVND(finalPrice)}
-          </span>
-          {hasDiscount && (
-            <span className="text-theme-xs font-semibold text-error-500">
-              -{p.discount}%
+          <div className="flex items-baseline gap-2">
+            <span className={cn(
+              "font-outfit text-lg font-extrabold",
+              hasDiscount ? "text-error-500" : "text-gray-900 dark:text-white",
+            )}>
+              {formatVND(finalPrice)}
             </span>
-          )}
-        </div>
+          </div>
 
-        {/* Rating + total reviews + comments */}
-        <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-theme-xs text-gray-500">
-          <span className="inline-flex items-center gap-0.5">
-            <span className="font-semibold text-gray-700 dark:text-gray-200">
-              {rating.toFixed(1)}
+          {/* Rating + total reviews + comments */}
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-theme-xs text-gray-500">
+            <span className="inline-flex items-center gap-1">
+              <StarIcon />
+              <span className="font-semibold text-gray-700 dark:text-gray-200">{rating.toFixed(1)}</span>
+              <span className="text-gray-400">({totalReviews})</span>
             </span>
-            <span className="text-warning-500">★</span>
-            <span>({totalReviews} đánh giá)</span>
-          </span>
-          {(p.totalComments ?? 0) > 0 && (
-            <span className="inline-flex items-center gap-0.5">
-              <span>💬</span>
-              <span>{p.totalComments} bình luận</span>
-            </span>
-          )}
+            {(p.totalComments ?? 0) > 0 && (
+              <span className="inline-flex items-center gap-1">
+                <CommentIcon />
+                <span>{p.totalComments}</span>
+              </span>
+            )}
+          </div>
         </div>
       </div>
     </Link>
+  );
+}
+
+// Bộ icon spec — đồng bộ stroke với phần còn lại của codebase, thay cho emoji.
+const SPEC_ICONS: Record<string, string> = {
+  cpu:     "M6 6h12v12H6z|M9 9h6v6H9z|M9 2v2|M15 2v2|M9 20v2|M15 20v2|M2 9h2|M2 15h2|M20 9h2|M20 15h2",
+  gpu:     "M12 2 2 7l10 5 10-5-10-5z|M2 17l10 5 10-5|M2 12l10 5 10-5",
+  memory:  "M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z|M2 12h20|M6 16h.01|M10 16h.01",
+  screen:  "M2 3h20v14H2z|M8 21h8|M12 17v4",
+  battery: "M2 7h15v10H2z|M20 10v4",
+};
+function SpecIcon({ name }: { name: string }) {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round"
+      className="shrink-0 text-gray-400 dark:text-gray-500">
+      {SPEC_ICONS[name].split("|").map((d, i) => <path key={i} d={d} />)}
+    </svg>
+  );
+}
+
+function StarIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" className="shrink-0 text-warning-400">
+      <path d="M12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+    </svg>
+  );
+}
+function CommentIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-gray-400">
+      <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8z" />
+    </svg>
   );
 }
 
@@ -508,13 +565,18 @@ function SpecLine({
 }: {
   icon: string;
   text: string;
-  extra?: React.ReactNode;
+  extra?: { icon: string; text: string };
 }) {
   return (
-    <li className="flex items-center gap-1.5 truncate">
-      <span className="shrink-0">{icon}</span>
+    <li className="flex items-center gap-1.5">
+      <SpecIcon name={icon} />
       <span className="truncate">{text}</span>
-      {extra && <span className="ml-auto shrink-0">{extra}</span>}
+      {extra && (
+        <span className="ml-auto flex shrink-0 items-center gap-1 text-gray-500 dark:text-gray-400">
+          <SpecIcon name={extra.icon} />
+          {extra.text}
+        </span>
+      )}
     </li>
   );
 }
